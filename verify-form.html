@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نموذج التحقق من استيفاء متطلبات التحكيم — حاضنة ابتكار 5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<!--
+  مكتبة Supabase JS — عبر CDN. إذا كانت الشبكة عندك تحظر jsdelivr/unpkg،
+  نزّل الملف وضمّنه محليًا بدل هذا السطر.
+-->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy-950:#12103C;
+  --navy-800:#1A1852;
+  --navy-700:#242066;
+  --teal-600:#0E7C7B;
+  --teal-500:#149493;
+  --teal-100:#E4F3F2;
+  --gold-500:#C9A24B;
+  --gold-100:#F7EFDD;
+  --purple-500:#6B4FA0;
+  --green-500:#2FA36B;
+  --paper:#F5F6F9;
+  --card:#FFFFFF;
+  --ink-900:#121826;
+  --ink-600:#4C5568;
+  --ink-400:#8790A3;
+  --line:#E1E4EB;
+  --danger:#C0392B;
+  --danger-100:#FBEAE8;
+  --success:#1E8E5A;
+  --success-100:#E7F5EE;
+  --amber:#B4790F;
+  --amber-100:#FBF1DF;
+  --radius:14px;
+  --shadow:0 4px 20px rgba(11,11,61,0.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink-900);
+  font-family:'IBM Plex Sans Arabic',sans-serif;
+  font-size:15px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+button{font-family:inherit;}
+a{color:inherit;}
+
+/* ===== corner-bracket signature element ===== */
+.bracket-frame{position:relative;}
+.bracket-frame::before,.bracket-frame::after,
+.bracket-frame .bk-tl,.bracket-frame .bk-tr,.bracket-frame .bk-bl,.bracket-frame .bk-br{content:'';}
+.bk-corner{position:absolute;width:16px;height:16px;border:2px solid var(--gold-500);opacity:.9;}
+.bk-corner.tl{top:-1px;right:-1px;border-left:none;border-bottom:none;border-radius:6px 0 0 0;}
+.bk-corner.tr{top:-1px;left:-1px;border-right:none;border-bottom:none;border-radius:0 6px 0 0;}
+.bk-corner.bl{bottom:-1px;right:-1px;border-left:none;border-top:none;border-radius:0 0 0 6px;}
+.bk-corner.br{bottom:-1px;left:-1px;border-right:none;border-top:none;border-radius:0 0 6px 0;}
+
+/* ===== top bar ===== */
+.topbar{
+  background:linear-gradient(180deg,var(--navy-950) 0%,var(--navy-800) 100%);
+  color:#fff;padding:18px 28px;position:sticky;top:0;z-index:40;
+  box-shadow:0 6px 24px rgba(11,11,61,0.18);
+}
+.topbar-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px;}
+.brand-mark{
+  position:relative;height:38px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{height:100%;width:auto;}
+.brand-text{flex:1;min-width:0;}
+.brand-title{font-size:17px;font-weight:800;font-family:'Cairo',sans-serif;}
+.brand-sub{font-size:12.5px;color:rgba(255,255,255,.6);margin-top:2px;}
+.project-pill{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+  border-radius:999px;padding:7px 14px;font-size:12.5px;color:rgba(255,255,255,.85);
+  display:flex;align-items:center;gap:8px;flex:none;
+}
+.project-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--teal-500);box-shadow:0 0 0 3px rgba(20,148,147,.25);}
+.topbar-actions{display:flex;gap:8px;flex:none;}
+.btn-topbar{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;
+  border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;
+  transition:background .15s;white-space:nowrap;font-family:inherit;
+}
+.btn-topbar:hover{background:rgba(255,255,255,.16);}
+.btn-topbar:disabled{opacity:.55;cursor:not-allowed;}
+.progress-shell{max-width:1180px;margin:12px auto 0;height:4px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--teal-500),var(--gold-500));transition:width .35s ease;}
+.progress-label{max-width:1180px;margin:6px auto 0;font-size:11.5px;color:rgba(255,255,255,.55);display:flex;justify-content:space-between;}
+
+/* ===== شريط علوي مضغوط على الجوال — الجزء الثابت كان يأخذ مساحة كبيرة من الشاشة ===== */
+@media(max-width:640px){
+  .topbar{padding:10px 14px;}
+  .topbar-inner{flex-wrap:wrap;gap:8px;row-gap:6px;}
+  .brand-mark{height:24px;}
+  .brand-title{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .brand-sub{display:none;}
+  .project-pill{padding:4px 10px;font-size:10.5px;order:3;}
+  .topbar-actions{gap:6px;order:4;margin-inline-start:auto;}
+  .btn-topbar{padding:5px 10px;font-size:10.5px;}
+  .progress-shell{margin-top:8px;}
+  .progress-label{font-size:9.5px;margin-top:4px;}
+  .eq-divider{height:12px;}
+}
+
+/* ===== layout ===== */
+.layout{max-width:1180px;margin:0 auto;padding:28px;display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start;}
+@media(max-width:920px){.layout{grid-template-columns:1fr;padding:16px;}}
+
+/* ===== stepper ===== */
+.stepper{position:sticky;top:112px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+@media(max-width:920px){.stepper{position:static;overflow-x:auto;display:flex;padding:6px;}}
+.step-item{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;border-right:3px solid transparent;transition:background .15s;}
+.step-item:hover{background:var(--paper);}
+.step-item.active{background:var(--teal-100);border-right-color:var(--teal-600);}
+@media(max-width:920px){.step-item{border-right:none;border-bottom:3px solid transparent;flex:none;white-space:nowrap;}.step-item.active{border-bottom-color:var(--teal-600);}}
+.step-num{
+  width:26px;height:26px;border-radius:8px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
+  background:var(--paper);color:var(--ink-400);border:1px solid var(--line);
+}
+.step-item.active .step-num{background:var(--navy-800);color:#fff;border-color:var(--navy-800);}
+.step-item.done .step-num{background:var(--success-100);color:var(--success);border-color:var(--success);}
+.step-item.warn .step-num{background:var(--amber-100);color:var(--amber);border-color:var(--amber);}
+.step-title{font-size:13px;color:var(--ink-900);font-weight:500;}
+.step-item.active .step-title{color:var(--navy-800);font-weight:600;}
+
+/* ===== main panel ===== */
+.panel{min-width:0;}
+.section-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 30px;position:relative;}
+@media(max-width:600px){.section-card{padding:20px 16px;}}
+.section-head{padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--line);}
+.section-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal-600);letter-spacing:.05em;font-weight:600;}
+.section-title{font-size:21px;font-weight:800;color:var(--navy-800);margin-top:6px;font-family:'Cairo',sans-serif;}
+.section-num-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;color:#fff;font-family:'Cairo',sans-serif;font-weight:800;font-size:13px;margin-inline-end:8px;vertical-align:middle;}
+.section-title::after{content:'';display:block;width:34px;height:3px;background:var(--teal-600);border-radius:2px;margin-top:8px;}
+.section-desc{font-size:13.5px;color:var(--ink-600);margin-top:6px;}
+.req-banner{background:var(--gold-100);border:1px solid #E9D6AB;border-radius:10px;padding:11px 14px;font-size:13px;color:#7A5C1E;margin-bottom:20px;display:flex;gap:8px;align-items:flex-start;}
+.ann-banner{background:var(--teal-100);border:1px solid rgba(20,148,147,.28);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--teal-700,#0E5C5B);margin-bottom:12px;display:flex;gap:9px;align-items:flex-start;white-space:pre-wrap;line-height:1.7;}
+.req-banner b{color:#5C4315;}
+
+.field{margin-bottom:18px;}
+.field-label{display:flex;gap:6px;font-size:13.5px;font-weight:600;color:var(--ink-900);margin-bottom:7px;}
+.field-label .req-star{color:var(--danger);}
+.field-hint{font-size:12px;color:var(--ink-400);margin-top:5px;}
+input[type=text],input[type=number],input[type=date],input[type=email],input[type=url],textarea,select{
+  width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--ink-900);font-family:inherit;font-size:14px;
+  transition:border-color .15s, box-shadow .15s;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--teal-600);box-shadow:0 0 0 3px rgba(14,124,123,.13);}
+textarea{min-height:96px;resize:vertical;}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' stroke='%234C5568' stroke-width='1.6' fill='none'/></svg>");background-repeat:no-repeat;background-position:left 13px center;padding-left:34px;}
+input:disabled,select:disabled{background:#F0F1F4;color:var(--ink-400);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:600px){.two-col{grid-template-columns:1fr;}}
+
+.choice-row{display:flex;flex-wrap:wrap;gap:10px;}
+.choice-pill{
+  border:1.5px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13.5px;cursor:pointer;
+  display:flex;align-items:center;gap:8px;background:#fff;transition:all .15s;user-select:none;
+}
+.choice-pill:hover{border-color:var(--teal-500);}
+.choice-pill.selected{border-color:var(--teal-600);background:var(--teal-100);color:var(--navy-800);font-weight:600;}
+.choice-pill input{display:none;}
+.choice-pill .ck{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--ink-400);flex:none;display:flex;align-items:center;justify-content:center;}
+.choice-pill.selected .ck{background:var(--teal-600);border-color:var(--teal-600);}
+.choice-pill.selected .ck::after{content:'✓';color:#fff;font-size:10px;line-height:1;}
+.choice-pill.radio .ck{border-radius:50%;}
+.choice-pill.radio.selected .ck::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff;}
+
+.stage-list{display:flex;flex-direction:column;gap:8px;}
+.stage-opt{border:1.5px solid var(--line);border-radius:12px;padding:13px 16px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;transition:all .15s;}
+.stage-opt:hover{border-color:var(--teal-500);}
+.stage-opt.selected{border-color:var(--teal-600);background:var(--teal-100);}
+.stage-opt .ck{margin-top:3px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink-400);flex:none;display:flex;align-items:center;justify-content:center;}
+.stage-opt.selected .ck{border-color:var(--teal-600);}
+.stage-opt.selected .ck::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--teal-600);}
+.stage-opt .stage-txt b{font-size:14px;color:var(--ink-900);font-family:'Cairo',sans-serif;font-weight:700;}
+.stage-opt .stage-txt span{font-size:12.5px;color:var(--ink-600);display:block;margin-top:2px;}
+.stage-opt .stage-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal-600);font-weight:600;}
+
+.file-drop{
+  border:1.5px dashed var(--line);border-radius:12px;padding:16px;text-align:center;cursor:pointer;
+  background:var(--paper);transition:border-color .15s, background .15s;
+}
+.file-drop:hover{border-color:var(--teal-500);background:var(--teal-100);}
+.file-drop .fi-title{font-size:13px;font-weight:600;color:var(--navy-800);}
+.file-drop .fi-sub{font-size:11.5px;color:var(--ink-400);margin-top:3px;}
+.file-list{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.file-chip{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;}
+.file-chip .fc-name{display:flex;align-items:center;gap:8px;color:var(--ink-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-chip .fc-size{color:var(--ink-400);font-family:'IBM Plex Mono',monospace;font-size:11px;flex:none;margin-inline-start:8px;}
+.file-chip .fc-remove{color:var(--danger);cursor:pointer;font-size:12px;flex:none;margin-inline-start:10px;background:none;border:none;}
+.video-toggle{display:flex;gap:8px;margin-bottom:10px;}
+.vt-btn{border:1.5px solid var(--line);border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer;background:#fff;}
+.vt-btn.active{background:var(--navy-800);color:#fff;border-color:var(--navy-800);}
+
+.member-card{border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px;position:relative;background:var(--paper);}
+.member-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.member-tag{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--navy-800);color:#fff;border-radius:6px;padding:4px 10px;font-weight:600;}
+.member-remove{background:none;border:none;color:var(--danger);font-size:12.5px;cursor:pointer;}
+.add-member-btn{
+  width:100%;border:1.5px dashed var(--teal-500);border-radius:12px;padding:13px;text-align:center;
+  color:var(--teal-600);font-weight:600;font-size:13.5px;cursor:pointer;background:var(--teal-100);
+}
+
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:5px 12px;}
+.badge.ok{background:var(--success-100);color:var(--success);}
+.badge.no{background:var(--danger-100);color:var(--danger);}
+.badge.mid{background:var(--amber-100);color:var(--amber);}
+.checklist-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+@media(max-width:600px){.checklist-grid{grid-template-columns:1fr;}}
+.checklist-row{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff;}
+.checklist-row .cr-label{font-size:13px;font-weight:600;color:var(--ink-900);}
+
+.declaration-box{background:var(--navy-950);color:rgba(255,255,255,.88);border-radius:12px;padding:20px 22px 24px;font-size:13px;line-height:2;margin-bottom:20px;position:relative;overflow:hidden;}
+.declaration-box::after{content:'';position:absolute;bottom:0;right:0;left:0;height:4px;background:var(--gold-500);}
+.declaration-box b{color:var(--gold-500);}
+
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:22px;gap:10px;flex-wrap:wrap;}
+.btn{border:none;border-radius:10px;padding:12px 22px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn-primary{background:var(--navy-800);color:#fff;}
+.btn-primary:hover{background:var(--navy-700);}
+.btn-ghost{background:#fff;color:var(--ink-900);border:1.5px solid var(--line);}
+.btn-ghost:hover{border-color:var(--ink-400);}
+.btn-gold{background:var(--gold-500);color:var(--navy-950);}
+.btn-gold:hover{filter:brightness(1.06);}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.side-actions{display:flex;gap:10px;}
+
+.toast{
+  position:fixed;bottom:22px;right:50%;transform:translateX(50%);
+  background:var(--navy-950);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:100;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
+  display:flex;align-items:center;gap:8px;
+}
+.toast.show{opacity:1;transform:translateX(50%) translateY(-4px);}
+.toast .tdot{width:7px;height:7px;border-radius:50%;background:var(--teal-500);}
+
+.error-text{color:var(--danger);font-size:12px;margin-top:5px;display:none;}
+.field.has-error input,.field.has-error textarea,.field.has-error select{border-color:var(--danger);}
+.field.has-error .error-text{display:block;}
+
+.footer-note{max-width:1180px;margin:8px auto 40px;padding:0 28px;font-size:11.5px;color:var(--ink-400);text-align:center;}
+.eq-divider{width:100%;height:22px;display:block;background:var(--paper);}@media print{
+  body *{visibility:hidden;}
+  #participantReportPrintable, #participantReportPrintable *{visibility:visible;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  #participantReportPrintable{position:absolute;top:0;right:0;left:0;width:100%;border:none!important;border-radius:0!important;margin:0!important;}
+  @page{margin:14mm;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-mark">
+<svg class="brand-logo-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="150.03 152.57 430.01 147.74">
+<defs>
+<clipPath id="clip-0">
+<path clip-rule="nonzero" d="M 0 0.26 L 729.20 0.26 L 729.20 452.67 L 0 452.67 Z M 0 0.26 "/>
+</clipPath>
+</defs>
+<g clip-path="url(#clip-0)">
+<path fill-rule="nonzero" fill="rgb(11.66%, 12.15%, 28.30%)" fill-opacity="1" d="M 0 452.67 L 729.20 452.67 L 729.20 0.26 L 0 0.26 Z M 0 452.67 "/>
+</g>
+<path fill-rule="nonzero" fill="rgb(26.70%, 74.65%, 57.17%)" fill-opacity="1" d="M 170.66 160.52 C 169.23 160.52 168.07 161.68 168.07 163.11 L 168.07 201.41 C 168.07 202.84 169.23 204.01 170.66 204.01 L 208.97 204.01 C 210.40 204.01 211.56 202.84 211.56 201.41 L 211.56 163.11 C 211.56 161.68 210.40 160.52 208.97 160.52 Z M 208.97 206.23 L 170.66 206.23 C 168.01 206.23 165.84 204.07 165.84 201.41 L 165.84 163.11 C 165.84 160.45 168.01 158.29 170.66 158.29 L 208.97 158.29 C 211.62 158.29 213.79 160.45 213.79 163.11 L 213.79 201.41 C 213.79 204.07 211.62 206.23 208.97 206.23 "/>
+<path fill-rule="nonzero" fill="rgb(26.70%, 74.65%, 57.17%)" fill-opacity="1" d="M 184.72 171.73 L 183.88 181.67 L 184.28 181.67 C 185.13 180.15 186.10 179.06 187.17 178.40 C 188.24 177.75 189.60 177.41 191.25 177.41 C 192.77 177.41 194.14 177.64 195.38 178.11 C 196.61 178.57 197.68 179.23 198.57 180.09 C 199.46 180.94 200.15 181.96 200.64 183.15 C 201.14 184.34 201.39 185.64 201.39 187.06 C 201.39 188.64 201.10 190.08 200.52 191.38 C 199.95 192.69 199.14 193.80 198.10 194.72 C 197.06 195.64 195.80 196.35 194.32 196.85 C 192.83 197.34 191.18 197.59 189.37 197.59 C 184.59 197.59 180.88 195.73 178.25 192.02 L 182.30 188.87 C 183.32 190.39 184.38 191.48 185.49 192.12 C 186.59 192.77 187.94 193.09 189.52 193.09 C 191.40 193.09 192.87 192.62 193.94 191.70 C 195.02 190.77 195.55 189.46 195.55 187.77 L 195.55 187.23 C 195.55 185.54 195.02 184.23 193.94 183.30 C 192.87 182.38 191.40 181.91 189.52 181.91 C 188.36 181.91 187.34 182.11 186.45 182.48 C 185.56 182.86 184.71 183.45 183.88 184.24 L 179.29 183.59 L 180.52 166.93 L 199.61 166.93 L 199.61 171.73 Z M 184.72 171.73 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 214.62 294.28 C 214.36 294.28 214.15 294.20 214.00 294.04 C 213.86 293.88 213.79 293.68 213.79 293.44 L 213.79 269.62 C 213.79 269.38 213.86 269.18 214.00 269.03 C 214.15 268.87 214.36 268.79 214.62 268.79 L 216.55 268.79 C 216.82 268.79 217.03 268.87 217.17 269.03 C 217.32 269.18 217.39 269.38 217.39 269.62 L 217.39 293.44 C 217.39 293.68 217.32 293.88 217.17 294.04 C 217.03 294.20 216.82 294.28 216.55 294.28 Z M 214.62 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 224.09 294.28 C 223.85 294.28 223.64 294.20 223.49 294.04 C 223.33 293.88 223.25 293.68 223.25 293.44 L 223.25 276.18 C 223.25 275.94 223.33 275.74 223.49 275.58 C 223.64 275.42 223.85 275.34 224.09 275.34 L 225.80 275.34 C 226.04 275.34 226.25 275.42 226.40 275.58 C 226.56 275.74 226.64 275.94 226.64 276.18 L 226.64 277.78 C 227.27 276.96 228.06 276.29 229.02 275.76 C 229.98 275.24 231.21 274.98 232.72 274.98 C 234.30 274.98 235.64 275.32 236.74 276.02 C 237.85 276.71 238.68 277.67 239.25 278.89 C 239.82 280.12 240.11 281.54 240.11 283.17 L 240.11 293.44 C 240.11 293.68 240.03 293.88 239.88 294.04 C 239.71 294.20 239.52 294.28 239.27 294.28 L 237.45 294.28 C 237.21 294.28 237.01 294.20 236.85 294.04 C 236.69 293.88 236.61 293.68 236.61 293.44 L 236.61 283.35 C 236.61 281.66 236.20 280.32 235.38 279.37 C 234.55 278.41 233.34 277.93 231.74 277.93 C 230.23 277.93 229.02 278.41 228.11 279.37 C 227.20 280.32 226.75 281.66 226.75 283.35 L 226.75 293.44 C 226.75 293.68 226.67 293.88 226.51 294.04 C 226.35 294.20 226.15 294.28 225.91 294.28 Z M 224.09 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 246.15 294.28 C 245.91 294.28 245.71 294.20 245.55 294.04 C 245.39 293.88 245.32 293.68 245.32 293.44 L 245.32 276.18 C 245.32 275.94 245.39 275.74 245.55 275.58 C 245.71 275.42 245.91 275.34 246.15 275.34 L 247.87 275.34 C 248.11 275.34 248.31 275.42 248.46 275.58 C 248.62 275.74 248.70 275.94 248.70 276.18 L 248.70 277.78 C 249.33 276.96 250.13 276.29 251.09 275.76 C 252.05 275.24 253.28 274.98 254.78 274.98 C 256.36 274.98 257.70 275.32 258.80 276.02 C 259.91 276.71 260.75 277.67 261.32 278.89 C 261.89 280.12 262.18 281.54 262.18 283.17 L 262.18 293.44 C 262.18 293.68 262.09 293.88 261.94 294.04 C 261.78 294.20 261.58 294.28 261.34 294.28 L 259.52 294.28 C 259.27 294.28 259.07 294.20 258.91 294.04 C 258.76 293.88 258.68 293.68 258.68 293.44 L 258.68 283.35 C 258.68 281.66 258.27 280.32 257.44 279.37 C 256.61 278.41 255.40 277.93 253.80 277.93 C 252.30 277.93 251.09 278.41 250.18 279.37 C 249.27 280.32 248.81 281.66 248.81 283.35 L 248.81 293.44 C 248.81 293.68 248.73 293.88 248.57 294.04 C 248.42 294.20 248.22 294.28 247.97 294.28 Z M 246.15 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 275.14 291.84 C 276.64 291.84 277.84 291.36 278.74 290.40 C 279.64 289.44 280.12 288.04 280.20 286.19 C 280.22 285.83 280.23 285.37 280.23 284.81 C 280.23 284.25 280.22 283.79 280.20 283.43 C 280.12 281.58 279.64 280.18 278.74 279.22 C 277.84 278.26 276.64 277.78 275.14 277.78 C 273.63 277.78 272.43 278.26 271.52 279.22 C 270.61 280.18 270.12 281.58 270.07 283.43 C 270.05 283.79 270.04 284.25 270.04 284.81 C 270.04 285.37 270.05 285.83 270.07 286.19 C 270.12 288.04 270.61 289.44 271.52 290.40 C 272.43 291.36 273.63 291.84 275.14 291.84 M 275.14 294.64 C 273.29 294.64 271.75 294.29 270.51 293.59 C 269.27 292.88 268.33 291.90 267.67 290.65 C 267.02 289.40 266.65 287.98 266.58 286.38 C 266.55 285.96 266.54 285.43 266.54 284.79 C 266.54 284.15 266.55 283.63 266.58 283.24 C 266.65 281.62 267.02 280.19 267.69 278.95 C 268.36 277.71 269.31 276.74 270.55 276.04 C 271.79 275.33 273.32 274.98 275.14 274.98 C 276.96 274.98 278.48 275.33 279.72 276.04 C 280.96 276.74 281.91 277.71 282.58 278.95 C 283.25 280.19 283.62 281.62 283.69 283.24 C 283.71 283.63 283.73 284.15 283.73 284.79 C 283.73 285.43 283.71 285.96 283.69 286.38 C 283.62 287.98 283.25 289.40 282.60 290.65 C 281.95 291.90 281.00 292.88 279.76 293.59 C 278.52 294.29 276.98 294.64 275.14 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 294.18 294.28 C 293.82 294.28 293.53 294.19 293.32 294.02 C 293.12 293.85 292.95 293.63 292.83 293.36 L 286.09 276.47 C 286.05 276.35 286.02 276.23 286.02 276.11 C 286.02 275.89 286.09 275.71 286.24 275.56 C 286.39 275.42 286.57 275.34 286.79 275.34 L 288.54 275.34 C 288.80 275.34 289.01 275.42 289.15 275.56 C 289.30 275.71 289.39 275.84 289.45 275.96 L 294.98 290.31 L 300.51 275.96 C 300.56 275.84 300.65 275.71 300.79 275.56 C 300.92 275.42 301.12 275.34 301.39 275.34 L 303.17 275.34 C 303.37 275.34 303.54 275.42 303.70 275.56 C 303.86 275.71 303.94 275.89 303.94 276.11 C 303.94 276.23 303.91 276.35 303.86 276.47 L 297.09 293.36 C 296.99 293.63 296.84 293.85 296.64 294.02 C 296.43 294.19 296.13 294.28 295.74 294.28 Z M 294.18 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 313.07 291.91 C 314.07 291.91 314.98 291.70 315.80 291.27 C 316.63 290.85 317.28 290.19 317.75 289.29 C 318.23 288.39 318.46 287.26 318.46 285.90 L 318.46 284.88 L 314.24 285.5 C 312.52 285.74 311.22 286.15 310.34 286.72 C 309.47 287.29 309.04 288.02 309.04 288.89 C 309.04 289.57 309.23 290.13 309.64 290.58 C 310.04 291.03 310.54 291.36 311.16 291.58 C 311.79 291.80 312.42 291.91 313.07 291.91 M 312.31 294.64 C 311.10 294.64 309.99 294.40 309.00 293.91 C 308 293.43 307.20 292.77 306.59 291.95 C 305.99 291.12 305.68 290.19 305.68 289.14 C 305.68 287.47 306.36 286.13 307.72 285.14 C 309.08 284.14 310.86 283.49 313.04 283.17 L 318.46 282.41 L 318.46 281.35 C 318.46 280.18 318.13 279.28 317.46 278.62 C 316.79 277.96 315.71 277.64 314.20 277.64 C 313.14 277.64 312.26 277.86 311.58 278.29 C 310.90 278.73 310.43 279.29 310.16 279.96 C 310.02 280.33 309.76 280.51 309.40 280.51 L 307.76 280.51 C 307.49 280.51 307.29 280.43 307.16 280.28 C 307.02 280.12 306.96 279.93 306.96 279.71 C 306.96 279.35 307.10 278.90 307.38 278.36 C 307.66 277.83 308.09 277.31 308.67 276.80 C 309.25 276.29 310 275.86 310.91 275.51 C 311.82 275.16 312.93 274.98 314.24 274.98 C 315.70 274.98 316.92 275.17 317.92 275.54 C 318.91 275.92 319.70 276.42 320.27 277.05 C 320.84 277.69 321.25 278.40 321.50 279.20 C 321.76 280.00 321.89 280.82 321.89 281.64 L 321.89 293.44 C 321.89 293.68 321.81 293.88 321.65 294.04 C 321.49 294.20 321.29 294.28 321.05 294.28 L 319.38 294.28 C 319.11 294.28 318.90 294.20 318.75 294.04 C 318.61 293.88 318.54 293.68 318.54 293.44 L 318.54 291.88 C 318.22 292.31 317.80 292.74 317.26 293.16 C 316.73 293.59 316.06 293.94 315.26 294.22 C 314.46 294.5 313.48 294.64 312.31 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 334.34 294.28 C 332.98 294.28 331.88 294.02 331.02 293.49 C 330.18 292.97 329.55 292.23 329.17 291.27 C 328.78 290.31 328.59 289.18 328.59 287.87 L 328.59 278.25 L 325.75 278.25 C 325.50 278.25 325.30 278.18 325.14 278.02 C 324.99 277.86 324.91 277.66 324.91 277.42 L 324.91 276.18 C 324.91 275.94 324.99 275.74 325.14 275.58 C 325.30 275.42 325.50 275.34 325.75 275.34 L 328.59 275.34 L 328.59 269.26 C 328.59 269.02 328.66 268.82 328.82 268.66 C 328.98 268.50 329.18 268.43 329.42 268.43 L 331.13 268.43 C 331.38 268.43 331.58 268.50 331.73 268.66 C 331.89 268.82 331.97 269.02 331.97 269.26 L 331.97 275.34 L 336.49 275.34 C 336.75 275.34 336.96 275.42 337.11 275.58 C 337.25 275.74 337.32 275.94 337.32 276.18 L 337.32 277.42 C 337.32 277.66 337.25 277.86 337.11 278.02 C 336.96 278.18 336.75 278.25 336.49 278.25 L 331.97 278.25 L 331.97 287.61 C 331.97 288.75 332.16 289.65 332.55 290.31 C 332.94 290.96 333.63 291.29 334.63 291.29 L 336.85 291.29 C 337.09 291.29 337.29 291.37 337.45 291.53 C 337.61 291.68 337.69 291.89 337.69 292.13 L 337.69 293.44 C 337.69 293.68 337.61 293.88 337.45 294.04 C 337.29 294.20 337.09 294.28 336.85 294.28 Z M 334.34 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 342.02 294.28 C 341.78 294.28 341.58 294.20 341.42 294.04 C 341.26 293.88 341.18 293.68 341.18 293.44 L 341.18 276.18 C 341.18 275.94 341.26 275.74 341.42 275.58 C 341.58 275.42 341.78 275.34 342.02 275.34 L 343.77 275.34 C 344.01 275.34 344.21 275.42 344.37 275.58 C 344.53 275.74 344.61 275.94 344.61 276.18 L 344.61 293.44 C 344.61 293.68 344.53 293.88 344.37 294.04 C 344.21 294.20 344.01 294.28 343.77 294.28 Z M 341.73 271.81 C 341.48 271.81 341.29 271.73 341.13 271.57 C 340.97 271.42 340.89 271.21 340.89 270.97 L 340.89 269.01 C 340.89 268.77 340.97 268.56 341.13 268.39 C 341.29 268.22 341.48 268.13 341.73 268.13 L 344.02 268.13 C 344.27 268.13 344.47 268.22 344.64 268.39 C 344.81 268.56 344.90 268.77 344.90 269.01 L 344.90 270.97 C 344.90 271.21 344.81 271.42 344.64 271.57 C 344.47 271.73 344.27 271.81 344.02 271.81 Z M 341.73 271.81 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 357.75 291.84 C 359.25 291.84 360.46 291.36 361.36 290.40 C 362.25 289.44 362.74 288.04 362.81 286.19 C 362.84 285.83 362.85 285.37 362.85 284.81 C 362.85 284.25 362.84 283.79 362.81 283.43 C 362.74 281.58 362.25 280.18 361.36 279.22 C 360.46 278.26 359.25 277.78 357.75 277.78 C 356.25 277.78 355.04 278.26 354.12 279.22 C 353.22 280.18 352.74 281.58 352.69 283.43 C 352.66 283.79 352.65 284.25 352.65 284.81 C 352.65 285.37 352.66 285.83 352.69 286.19 C 352.74 288.04 353.22 289.44 354.12 290.40 C 355.04 291.36 356.25 291.84 357.75 291.84 M 357.75 294.64 C 355.90 294.64 354.36 294.29 353.12 293.59 C 351.89 292.88 350.94 291.90 350.29 290.65 C 349.63 289.40 349.27 287.98 349.19 286.38 C 349.17 285.96 349.16 285.43 349.16 284.79 C 349.16 284.15 349.17 283.63 349.19 283.24 C 349.27 281.62 349.64 280.19 350.30 278.95 C 350.97 277.71 351.92 276.74 353.16 276.04 C 354.40 275.33 355.93 274.98 357.75 274.98 C 359.57 274.98 361.10 275.33 362.34 276.04 C 363.57 276.74 364.53 277.71 365.20 278.95 C 365.86 280.19 366.23 281.62 366.30 283.24 C 366.33 283.63 366.34 284.15 366.34 284.79 C 366.34 285.43 366.33 285.96 366.30 286.38 C 366.23 287.98 365.87 289.40 365.21 290.65 C 364.56 291.90 363.61 292.88 362.37 293.59 C 361.14 294.29 359.59 294.64 357.75 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 371.73 294.28 C 371.49 294.28 371.29 294.20 371.13 294.04 C 370.97 293.88 370.89 293.68 370.89 293.44 L 370.89 276.18 C 370.89 275.94 370.97 275.74 371.13 275.58 C 371.29 275.42 371.49 275.34 371.73 275.34 L 373.44 275.34 C 373.68 275.34 373.89 275.42 374.04 275.58 C 374.20 275.74 374.28 275.94 374.28 276.18 L 374.28 277.78 C 374.91 276.96 375.70 276.29 376.66 275.76 C 377.62 275.24 378.86 274.98 380.36 274.98 C 381.94 274.98 383.28 275.32 384.38 276.02 C 385.49 276.71 386.32 277.67 386.89 278.89 C 387.46 280.12 387.75 281.54 387.75 283.17 L 387.75 293.44 C 387.75 293.68 387.67 293.88 387.52 294.04 C 387.36 294.20 387.16 294.28 386.91 294.28 L 385.09 294.28 C 384.85 294.28 384.65 294.20 384.49 294.04 C 384.33 293.88 384.25 293.68 384.25 293.44 L 384.25 283.35 C 384.25 281.66 383.84 280.32 383.02 279.37 C 382.19 278.41 380.98 277.93 379.38 277.93 C 377.87 277.93 376.66 278.41 375.75 279.37 C 374.84 280.32 374.39 281.66 374.39 283.35 L 374.39 293.44 C 374.39 293.68 374.31 293.88 374.15 294.04 C 373.99 294.20 373.79 294.28 373.55 294.28 Z M 371.73 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 403.19 294.28 C 402.92 294.28 402.71 294.20 402.57 294.04 C 402.43 293.88 402.35 293.68 402.35 293.44 L 402.35 269.62 C 402.35 269.38 402.43 269.18 402.57 269.03 C 402.71 268.87 402.92 268.79 403.19 268.79 L 405.12 268.79 C 405.39 268.79 405.59 268.87 405.74 269.03 C 405.88 269.18 405.96 269.38 405.96 269.62 L 405.96 293.44 C 405.96 293.68 405.88 293.88 405.74 294.04 C 405.59 294.20 405.39 294.28 405.12 294.28 Z M 403.19 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 412.66 294.28 C 412.41 294.28 412.21 294.20 412.05 294.04 C 411.89 293.88 411.82 293.68 411.82 293.44 L 411.82 276.18 C 411.82 275.94 411.89 275.74 412.05 275.58 C 412.21 275.42 412.41 275.34 412.66 275.34 L 414.37 275.34 C 414.61 275.34 414.81 275.42 414.97 275.58 C 415.12 275.74 415.20 275.94 415.20 276.18 L 415.20 277.78 C 415.84 276.96 416.63 276.29 417.59 275.76 C 418.55 275.24 419.78 274.98 421.29 274.98 C 422.86 274.98 424.20 275.32 425.31 276.02 C 426.41 276.71 427.25 277.67 427.82 278.89 C 428.39 280.12 428.68 281.54 428.68 283.17 L 428.68 293.44 C 428.68 293.68 428.60 293.88 428.44 294.04 C 428.28 294.20 428.08 294.28 427.84 294.28 L 426.02 294.28 C 425.77 294.28 425.57 294.20 425.42 294.04 C 425.26 293.88 425.18 293.68 425.18 293.44 L 425.18 283.35 C 425.18 281.66 424.77 280.32 423.94 279.37 C 423.12 278.41 421.90 277.93 420.30 277.93 C 418.80 277.93 417.59 278.41 416.68 279.37 C 415.77 280.32 415.31 281.66 415.31 283.35 L 415.31 293.44 C 415.31 293.68 415.23 293.88 415.08 294.04 C 414.92 294.20 414.72 294.28 414.48 294.28 Z M 412.66 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 441.53 294.64 C 439.80 294.64 438.32 294.30 437.07 293.64 C 435.82 292.97 434.85 292.01 434.17 290.76 C 433.49 289.51 433.13 288.02 433.08 286.27 C 433.05 285.90 433.04 285.42 433.04 284.81 C 433.04 284.20 433.05 283.72 433.08 283.35 C 433.13 281.61 433.49 280.11 434.17 278.86 C 434.85 277.61 435.82 276.65 437.07 275.98 C 438.32 275.31 439.80 274.98 441.53 274.98 C 442.93 274.98 444.14 275.17 445.15 275.56 C 446.16 275.95 446.99 276.45 447.64 277.05 C 448.30 277.66 448.79 278.32 449.12 279.02 C 449.45 279.72 449.62 280.39 449.65 281.02 C 449.67 281.27 449.60 281.46 449.43 281.61 C 449.26 281.75 449.05 281.82 448.81 281.82 L 447.06 281.82 C 446.82 281.82 446.64 281.77 446.52 281.66 C 446.39 281.55 446.27 281.36 446.15 281.09 C 445.71 279.91 445.12 279.07 444.37 278.58 C 443.62 278.10 442.68 277.86 441.56 277.86 C 440.11 277.86 438.93 278.30 438.02 279.20 C 437.11 280.10 436.61 281.54 436.54 283.54 C 436.52 284.41 436.52 285.26 436.54 286.08 C 436.61 288.10 437.11 289.55 438.02 290.43 C 438.93 291.32 440.11 291.76 441.56 291.76 C 442.68 291.76 443.62 291.52 444.37 291.04 C 445.12 290.55 445.71 289.71 446.15 288.52 C 446.27 288.26 446.39 288.06 446.52 287.94 C 446.64 287.82 446.82 287.76 447.06 287.76 L 448.81 287.76 C 449.05 287.76 449.26 287.84 449.43 288.00 C 449.60 288.15 449.67 288.35 449.65 288.60 C 449.62 289.11 449.51 289.63 449.32 290.16 C 449.12 290.70 448.82 291.23 448.39 291.78 C 447.96 292.33 447.44 292.81 446.80 293.24 C 446.18 293.66 445.43 294.00 444.55 294.26 C 443.68 294.51 442.67 294.64 441.53 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 461.04 294.64 C 459.49 294.64 458.17 294.29 457.09 293.60 C 456.01 292.91 455.20 291.95 454.64 290.71 C 454.08 289.47 453.80 288.05 453.80 286.45 L 453.80 276.18 C 453.80 275.94 453.88 275.74 454.04 275.58 C 454.19 275.42 454.39 275.34 454.64 275.34 L 456.46 275.34 C 456.70 275.34 456.90 275.42 457.06 275.58 C 457.21 275.74 457.29 275.94 457.29 276.18 L 457.29 286.27 C 457.29 289.88 458.87 291.69 462.03 291.69 C 463.53 291.69 464.74 291.21 465.65 290.25 C 466.56 289.29 467.02 287.96 467.02 286.27 L 467.02 276.18 C 467.02 275.94 467.09 275.74 467.25 275.58 C 467.41 275.42 467.61 275.34 467.85 275.34 L 469.67 275.34 C 469.91 275.34 470.11 275.42 470.26 275.58 C 470.40 275.74 470.47 275.94 470.47 276.18 L 470.47 293.44 C 470.47 293.68 470.40 293.88 470.26 294.04 C 470.11 294.20 469.91 294.28 469.67 294.28 L 467.96 294.28 C 467.72 294.28 467.52 294.20 467.36 294.04 C 467.20 293.88 467.12 293.68 467.12 293.44 L 467.12 291.84 C 466.47 292.69 465.67 293.37 464.74 293.88 C 463.80 294.39 462.57 294.64 461.04 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 484.49 291.69 C 485.75 291.69 486.74 291.42 487.46 290.87 C 488.18 290.32 488.69 289.61 489.01 288.72 C 489.32 287.84 489.50 286.89 489.55 285.86 C 489.58 285.16 489.58 284.46 489.55 283.75 C 489.50 282.73 489.32 281.78 489.01 280.89 C 488.69 280.01 488.18 279.29 487.46 278.75 C 486.74 278.20 485.75 277.93 484.49 277.93 C 483.35 277.93 482.41 278.20 481.65 278.73 C 480.90 279.26 480.33 279.95 479.96 280.77 C 479.58 281.59 479.38 282.43 479.36 283.28 C 479.33 283.67 479.32 284.14 479.32 284.68 C 479.32 285.23 479.33 285.70 479.36 286.08 C 479.41 286.98 479.61 287.86 479.96 288.72 C 480.31 289.59 480.86 290.30 481.60 290.85 C 482.34 291.41 483.30 291.69 484.49 291.69 M 485.25 294.64 C 483.80 294.64 482.59 294.38 481.62 293.86 C 480.64 293.34 479.87 292.69 479.29 291.91 L 479.29 293.44 C 479.29 293.68 479.21 293.88 479.05 294.04 C 478.89 294.20 478.69 294.28 478.45 294.28 L 476.77 294.28 C 476.53 294.28 476.33 294.20 476.17 294.04 C 476.02 293.88 475.93 293.68 475.93 293.44 L 475.93 269.26 C 475.93 269.02 476.02 268.82 476.17 268.66 C 476.33 268.50 476.53 268.43 476.77 268.43 L 478.56 268.43 C 478.80 268.43 478.99 268.50 479.14 268.66 C 479.29 268.82 479.36 269.02 479.36 269.26 L 479.36 277.64 C 479.96 276.88 480.75 276.25 481.71 275.74 C 482.66 275.23 483.85 274.98 485.25 274.98 C 486.61 274.98 487.77 275.21 488.73 275.69 C 489.69 276.16 490.48 276.81 491.10 277.64 C 491.72 278.46 492.18 279.40 492.5 280.44 C 492.82 281.48 493 282.58 493.05 283.71 C 493.07 284.11 493.09 284.47 493.09 284.81 C 493.09 285.15 493.07 285.51 493.05 285.90 C 493 287.07 492.82 288.17 492.5 289.21 C 492.18 290.26 491.72 291.19 491.10 292 C 490.48 292.81 489.69 293.46 488.73 293.93 C 487.77 294.40 486.61 294.64 485.25 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 503.61 291.91 C 504.60 291.91 505.51 291.70 506.34 291.27 C 507.16 290.85 507.81 290.19 508.29 289.29 C 508.76 288.39 509.00 287.26 509.00 285.90 L 509.00 284.88 L 504.77 285.5 C 503.05 285.74 501.75 286.15 500.88 286.72 C 500 287.29 499.56 288.02 499.56 288.89 C 499.56 289.57 499.77 290.13 500.16 290.58 C 500.57 291.03 501.07 291.36 501.70 291.58 C 502.31 291.80 502.95 291.91 503.61 291.91 M 502.84 294.64 C 501.63 294.64 500.52 294.40 499.53 293.91 C 498.53 293.43 497.73 292.77 497.12 291.95 C 496.52 291.12 496.21 290.19 496.21 289.14 C 496.21 287.47 496.89 286.13 498.25 285.14 C 499.61 284.14 501.39 283.49 503.57 283.17 L 509.00 282.41 L 509.00 281.35 C 509.00 280.18 508.66 279.28 507.99 278.62 C 507.32 277.96 506.24 277.64 504.73 277.64 C 503.67 277.64 502.79 277.86 502.11 278.29 C 501.43 278.73 500.96 279.29 500.70 279.96 C 500.55 280.33 500.29 280.51 499.93 280.51 L 498.29 280.51 C 498.02 280.51 497.82 280.43 497.69 280.28 C 497.55 280.12 497.49 279.93 497.49 279.71 C 497.49 279.35 497.63 278.90 497.91 278.36 C 498.19 277.83 498.62 277.31 499.20 276.80 C 499.78 276.29 500.53 275.86 501.44 275.51 C 502.35 275.16 503.46 274.98 504.77 274.98 C 506.23 274.98 507.45 275.17 508.45 275.54 C 509.44 275.92 510.23 276.42 510.80 277.05 C 511.37 277.69 511.78 278.40 512.04 279.20 C 512.29 280.00 512.42 280.82 512.42 281.64 L 512.42 293.44 C 512.42 293.68 512.34 293.88 512.18 294.04 C 512.02 294.20 511.82 294.28 511.58 294.28 L 509.91 294.28 C 509.64 294.28 509.43 294.20 509.29 294.04 C 509.14 293.88 509.07 293.68 509.07 293.44 L 509.07 291.88 C 508.75 292.31 508.33 292.74 507.79 293.16 C 507.26 293.59 506.59 293.94 505.79 294.22 C 504.99 294.5 504.01 294.64 502.84 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 524.87 294.28 C 523.51 294.28 522.41 294.02 521.55 293.49 C 520.71 292.97 520.09 292.23 519.70 291.27 C 519.31 290.31 519.12 289.18 519.12 287.87 L 519.12 278.25 L 516.28 278.25 C 516.04 278.25 515.83 278.18 515.68 278.02 C 515.52 277.86 515.44 277.66 515.44 277.42 L 515.44 276.18 C 515.44 275.94 515.52 275.74 515.68 275.58 C 515.83 275.42 516.04 275.34 516.28 275.34 L 519.12 275.34 L 519.12 269.26 C 519.12 269.02 519.20 268.82 519.35 268.66 C 519.51 268.50 519.71 268.43 519.95 268.43 L 521.66 268.43 C 521.91 268.43 522.11 268.50 522.27 268.66 C 522.43 268.82 522.50 269.02 522.50 269.26 L 522.50 275.34 L 527.02 275.34 C 527.29 275.34 527.49 275.42 527.64 275.58 C 527.78 275.74 527.86 275.94 527.86 276.18 L 527.86 277.42 C 527.86 277.66 527.78 277.86 527.64 278.02 C 527.49 278.18 527.29 278.25 527.02 278.25 L 522.50 278.25 L 522.50 287.61 C 522.50 288.75 522.70 289.65 523.09 290.31 C 523.47 290.96 524.16 291.29 525.16 291.29 L 527.38 291.29 C 527.62 291.29 527.82 291.37 527.98 291.53 C 528.14 291.68 528.22 291.89 528.22 292.13 L 528.22 293.44 C 528.22 293.68 528.14 293.88 527.98 294.04 C 527.82 294.20 527.62 294.28 527.38 294.28 Z M 524.87 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 539.47 291.84 C 540.97 291.84 542.18 291.36 543.07 290.40 C 543.97 289.44 544.46 288.04 544.53 286.19 C 544.55 285.83 544.57 285.37 544.57 284.81 C 544.57 284.25 544.55 283.79 544.53 283.43 C 544.46 281.58 543.97 280.18 543.07 279.22 C 542.18 278.26 540.97 277.78 539.47 277.78 C 537.96 277.78 536.76 278.26 535.85 279.22 C 534.94 280.18 534.46 281.58 534.41 283.43 C 534.38 283.79 534.37 284.25 534.37 284.81 C 534.37 285.37 534.38 285.83 534.41 286.19 C 534.46 288.04 534.94 289.44 535.85 290.40 C 536.76 291.36 537.96 291.84 539.47 291.84 M 539.47 294.64 C 537.62 294.64 536.08 294.29 534.85 293.59 C 533.61 292.88 532.66 291.90 532.01 290.65 C 531.35 289.40 530.98 287.98 530.91 286.38 C 530.89 285.96 530.88 285.43 530.88 284.79 C 530.88 284.15 530.89 283.63 530.91 283.24 C 530.98 281.62 531.36 280.19 532.02 278.95 C 532.69 277.71 533.64 276.74 534.88 276.04 C 536.12 275.33 537.65 274.98 539.47 274.98 C 541.29 274.98 542.82 275.33 544.06 276.04 C 545.30 276.74 546.25 277.71 546.91 278.95 C 547.58 280.19 547.95 281.62 548.03 283.24 C 548.05 283.63 548.06 284.15 548.06 284.79 C 548.06 285.43 548.05 285.96 548.03 286.38 C 547.95 287.98 547.59 289.40 546.93 290.65 C 546.28 291.90 545.33 292.88 544.09 293.59 C 542.86 294.29 541.31 294.64 539.47 294.64 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 553.45 294.28 C 553.21 294.28 553.01 294.20 552.85 294.04 C 552.69 293.88 552.61 293.68 552.61 293.44 L 552.61 276.21 C 552.61 275.97 552.69 275.77 552.85 275.60 C 553.01 275.43 553.21 275.34 553.45 275.34 L 555.12 275.34 C 555.37 275.34 555.57 275.43 555.75 275.60 C 555.91 275.77 556 275.97 556 276.21 L 556 277.82 C 556.48 277.00 557.15 276.38 558.00 275.96 C 558.85 275.55 559.88 275.34 561.10 275.34 L 562.52 275.34 C 562.76 275.34 562.96 275.42 563.12 275.58 C 563.27 275.74 563.36 275.94 563.36 276.18 L 563.36 277.67 C 563.36 277.92 563.27 278.11 563.12 278.25 C 562.96 278.40 562.76 278.47 562.52 278.47 L 560.33 278.47 C 559.02 278.47 557.99 278.86 557.24 279.62 C 556.48 280.39 556.11 281.42 556.11 282.73 L 556.11 293.44 C 556.11 293.68 556.02 293.88 555.86 294.04 C 555.68 294.20 555.48 294.28 555.23 294.28 Z M 553.45 294.28 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 225.31 222.14 L 222.43 222.14 C 221.86 222.14 221.57 222.43 221.57 223.00 L 221.57 248.31 C 221.57 250.23 221.09 251.70 220.16 252.71 C 219.21 253.73 217.71 254.24 215.63 254.24 L 215.14 254.24 C 215.01 254.24 214.84 254.22 214.65 254.18 C 214.07 254.15 213.79 254.42 213.79 254.99 L 213.90 256.95 C 213.90 257.53 214.19 257.86 214.77 257.93 C 215.38 258.05 216.04 258.11 216.73 258.11 C 219.80 258.11 222.15 257.21 223.79 255.43 C 225.42 253.64 226.23 251.28 226.23 248.36 L 226.23 223.00 C 226.23 222.43 225.93 222.14 225.31 222.14 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 352.70 251.30 C 351.85 251.30 351.13 251.59 350.54 252.17 C 349.94 252.75 349.64 253.45 349.64 254.30 C 349.64 255.18 349.94 255.90 350.54 256.46 C 351.13 257.02 351.83 257.30 352.64 257.30 C 353.52 257.30 354.25 257.01 354.83 256.43 C 355.41 255.86 355.70 255.14 355.70 254.30 C 355.70 253.42 355.41 252.70 354.83 252.14 C 354.25 251.58 353.54 251.30 352.70 251.30 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 358.23 222.14 L 355.29 222.14 C 354.71 222.14 354.43 222.43 354.43 223.00 L 354.43 242.37 L 343.94 242.37 C 342.48 242.37 341.43 242.00 340.80 241.27 C 340.16 240.55 339.84 239.60 339.84 238.45 L 339.84 223.00 C 339.84 222.43 339.56 222.14 338.98 222.14 L 336.10 222.14 C 335.48 222.14 335.18 222.43 335.18 223.00 L 335.18 238.51 C 335.18 238.70 335.18 238.88 335.20 239.05 C 335.22 239.23 335.23 239.41 335.23 239.60 C 334.70 240.37 333.98 241.02 333.07 241.56 C 332.17 242.10 331.06 242.37 329.76 242.37 L 325.43 242.37 C 325.41 242.37 325.40 242.38 325.38 242.38 C 325.36 242.38 325.34 242.37 325.32 242.37 L 317.84 242.37 C 316.91 242.37 316.10 242.23 315.39 241.96 C 314.68 241.70 314.05 241.35 313.52 240.93 C 314.17 239.93 314.67 238.84 315.01 237.64 C 315.36 236.45 315.53 235.18 315.53 233.84 C 315.53 231.61 315.06 229.61 314.12 227.84 C 313.18 226.08 311.88 224.64 310.23 223.52 C 309.92 223.33 309.52 223.17 309.02 223.03 C 308.52 222.90 308.02 222.83 307.52 222.83 L 261.38 222.83 L 278.15 207.09 C 278.46 206.83 278.57 206.62 278.5 206.46 C 278.42 206.31 278.19 206.23 277.81 206.23 L 274.29 206.23 C 273.68 206.23 273.14 206.46 272.68 206.92 L 256.13 222.83 L 256.08 222.83 L 256.08 225.83 C 256.08 226.48 256.39 226.81 257 226.81 L 307.52 226.81 C 308.56 227.54 309.37 228.51 309.97 229.72 C 310.57 230.93 310.86 232.30 310.86 233.84 C 310.86 235.11 310.66 236.26 310.26 237.30 C 309.86 238.34 309.30 239.23 308.59 239.98 C 307.88 240.73 307.02 241.31 306.02 241.73 C 305.02 242.16 283.05 242.37 281.90 242.37 L 244.92 242.37 C 243.08 242.37 241.82 241.88 241.14 240.90 C 240.47 239.92 240.14 238.51 240.14 236.66 L 240.14 207.09 C 240.14 206.52 239.85 206.23 239.27 206.23 L 236.39 206.23 C 235.82 206.23 235.53 206.52 235.53 207.09 L 235.53 236.89 C 235.53 238.28 235.69 239.55 236.02 240.70 C 236.34 241.85 236.85 242.84 237.54 243.67 C 238.23 244.49 239.15 245.14 240.28 245.62 C 241.41 246.11 242.79 246.35 244.40 246.35 L 281.96 246.35 C 283.65 246.35 306.11 246.09 307.55 245.57 C 308.99 245.05 310.27 244.29 311.38 243.29 C 312.07 244.10 312.98 244.81 314.09 245.43 C 315.20 246.04 316.47 246.35 317.89 246.35 L 325.32 246.35 C 325.34 246.35 325.36 246.34 325.38 246.34 C 325.40 246.34 325.41 246.35 325.43 246.35 L 329.64 246.35 C 331.14 246.35 332.48 246.01 333.65 245.34 C 334.82 244.67 335.73 243.89 336.39 243.00 C 337 244.00 337.89 244.81 339.04 245.43 C 340.19 246.04 341.69 246.35 343.53 246.35 L 357.31 246.35 C 358.5 246.35 359.09 245.75 359.09 244.56 L 359.09 223.00 C 359.09 222.43 358.81 222.14 358.23 222.14 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 372.46 206.23 L 369.53 206.23 C 368.95 206.23 368.66 206.52 368.66 207.10 L 368.66 245.48 C 368.66 246.06 368.95 246.35 369.53 246.35 L 372.46 246.35 C 373.04 246.35 373.33 246.06 373.33 245.48 L 373.33 207.10 C 373.33 206.52 373.04 206.23 372.46 206.23 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 446.73 215.95 C 447.61 215.95 448.34 215.66 448.91 215.09 C 449.49 214.51 449.78 213.80 449.78 212.95 C 449.78 212.07 449.49 211.35 448.91 210.79 C 448.34 210.23 447.63 209.95 446.79 209.95 C 445.94 209.95 445.22 210.24 444.62 210.82 C 444.03 211.39 443.73 212.11 443.73 212.95 C 443.73 213.84 444.03 214.55 444.62 215.11 C 445.22 215.67 445.92 215.95 446.73 215.95 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 483.07 215.95 C 483.95 215.95 484.68 215.66 485.25 215.08 C 485.83 214.51 486.12 213.80 486.12 212.95 C 486.12 212.07 485.83 211.35 485.25 210.79 C 484.68 210.23 483.97 209.95 483.12 209.95 C 482.28 209.95 481.55 210.24 480.96 210.82 C 480.37 211.39 480.07 212.11 480.07 212.95 C 480.07 213.84 480.37 214.55 480.96 215.11 C 481.55 215.67 482.26 215.95 483.07 215.95 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 498.83 237.27 C 498.43 238.33 497.86 239.23 497.13 239.98 C 496.40 240.73 495.54 241.31 494.54 241.73 C 493.54 242.16 492.46 242.37 491.31 242.37 L 467.62 242.37 L 467.62 226.75 L 496.21 226.75 C 497.20 227.52 497.99 228.51 498.57 229.72 C 499.14 230.93 499.43 232.28 499.43 233.78 C 499.43 235.05 499.23 236.21 498.83 237.27 M 411.25 237.07 C 410.60 238.76 409.55 240.09 408.11 241.04 C 406.67 242.00 404.99 242.48 403.07 242.48 C 401.76 242.48 400.56 242.25 399.46 241.79 C 398.37 241.33 397.43 240.68 396.64 239.83 C 395.85 238.99 395.24 237.99 394.80 236.84 C 394.35 235.68 394.13 234.41 394.13 233.03 C 394.13 231.46 394.41 230.04 394.97 228.77 C 395.52 227.5 396.30 226.44 397.30 225.60 L 411.25 225.60 Z M 502 226.61 C 501.33 225.51 500.49 224.60 499.49 223.87 C 498.49 223.14 497.34 222.77 496.03 222.77 L 467.62 222.77 L 467.62 219.55 C 467.62 218.97 467.33 218.68 466.75 218.68 L 463.82 218.68 C 463.24 218.68 462.95 218.97 462.95 219.55 L 462.95 242.37 L 453.27 242.37 C 451.81 242.37 450.76 242.00 450.12 241.27 C 449.49 240.55 449.18 239.60 449.18 238.45 L 449.18 223.00 C 449.18 222.43 448.89 222.14 448.31 222.14 L 445.43 222.14 C 444.81 222.14 444.51 222.43 444.51 223.00 L 444.51 238.51 C 444.51 238.70 444.52 238.90 444.54 239.11 C 444.55 239.32 444.57 239.53 444.57 239.72 C 444.03 240.49 443.30 241.12 442.40 241.62 C 441.5 242.12 440.41 242.37 439.14 242.37 L 434.82 242.37 C 434.80 242.37 434.79 242.38 434.77 242.38 C 434.75 242.38 434.73 242.37 434.71 242.37 L 420.01 242.37 C 418.55 242.37 417.50 242.00 416.87 241.27 C 416.23 240.55 415.92 239.60 415.92 238.45 L 415.92 220.18 C 415.92 219.64 415.65 219.38 415.11 219.38 L 412.06 219.38 C 411.52 219.38 411.25 219.64 411.25 220.18 L 411.25 221.62 L 397.13 221.62 C 396.09 221.62 395.19 221.91 394.42 222.48 C 392.88 223.68 391.67 225.18 390.79 227.01 C 389.91 228.84 389.46 230.88 389.46 233.15 C 389.46 235.07 389.78 236.85 390.41 238.48 C 391.05 240.11 391.92 241.52 393.04 242.69 C 394.15 243.86 395.48 244.78 397.01 245.45 C 398.55 246.12 400.22 246.46 402.03 246.46 C 404.11 246.46 405.98 246.05 407.65 245.22 C 409.32 244.40 410.71 243.25 411.83 241.79 C 412.33 243.06 413.19 244.14 414.42 245.02 C 415.65 245.91 417.40 246.35 419.66 246.35 L 434.71 246.35 C 434.73 246.35 434.75 246.34 434.77 246.34 C 434.79 246.34 434.80 246.35 434.82 246.35 L 439.03 246.35 C 440.53 246.35 441.86 246.02 443.01 245.37 C 444.16 244.71 445.06 243.95 445.72 243.06 C 446.37 244.02 447.27 244.81 448.43 245.43 C 449.58 246.04 451.08 246.35 452.92 246.35 L 491.42 246.35 C 493.23 246.35 494.90 246.04 496.44 245.43 C 497.97 244.81 499.31 243.95 500.45 242.83 C 501.58 241.71 502.46 240.39 503.09 238.86 C 503.73 237.32 504.05 235.62 504.05 233.78 C 504.05 232.67 503.87 231.47 503.53 230.18 C 503.18 228.89 502.67 227.70 502 226.61 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 560.88 234.59 C 560.18 232.40 559.48 230.37 558.77 228.51 C 558.06 226.64 557.16 225.05 556.06 223.72 C 554.97 222.40 553.61 221.36 551.97 220.61 C 550.34 219.86 548.29 219.49 545.83 219.49 C 544.41 219.49 543.03 219.60 541.68 219.83 C 541.11 219.91 540.82 220.24 540.82 220.81 L 540.82 223.12 C 540.82 223.70 541.11 223.93 541.68 223.81 C 542.34 223.70 543.01 223.61 543.70 223.55 C 544.39 223.49 545.03 223.46 545.60 223.46 C 547.10 223.46 548.39 223.71 549.46 224.21 C 550.54 224.71 551.48 225.43 552.29 226.35 C 553.09 227.27 553.79 228.38 554.36 229.66 C 554.94 230.95 555.46 232.40 555.92 234.01 L 558.40 242.37 L 534.94 242.37 C 534.92 242.37 534.90 242.38 534.88 242.38 C 534.86 242.38 534.85 242.37 534.82 242.37 L 520.64 242.37 C 518.80 242.37 517.54 241.88 516.87 240.90 C 516.20 239.92 515.86 238.51 515.86 236.66 L 515.86 207.10 C 515.86 206.52 515.57 206.23 515.00 206.23 L 512.11 206.23 C 511.54 206.23 511.25 206.52 511.25 207.10 L 511.25 236.89 C 511.25 238.28 511.41 239.55 511.74 240.70 C 512.07 241.85 512.58 242.84 513.27 243.67 C 513.96 244.49 514.87 245.14 516.00 245.62 C 517.14 246.11 518.51 246.35 520.12 246.35 L 534.82 246.35 C 534.85 246.35 534.86 246.34 534.88 246.34 C 534.90 246.34 534.92 246.35 534.94 246.35 L 562.03 246.35 C 562.45 246.35 562.78 246.22 563.01 245.97 C 563.24 245.72 563.36 245.39 563.36 244.96 L 563.36 242.37 Z M 560.88 234.59 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 331.01 214.96 L 342.91 214.96 C 343.50 214.96 343.99 214.47 343.99 213.87 L 343.99 212.03 C 343.99 211.43 343.50 210.95 342.91 210.95 L 331.01 210.95 C 330.41 210.95 329.93 211.43 329.93 212.03 L 329.93 213.87 C 329.93 214.47 330.41 214.96 331.01 214.96 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 100%, 100%)" fill-opacity="1" d="M 398.27 214.96 L 410.16 214.96 C 410.77 214.96 411.25 214.47 411.25 213.87 L 411.25 212.03 C 411.25 211.43 410.77 210.95 410.16 210.95 L 398.27 210.95 C 397.67 210.95 397.19 211.43 397.19 212.03 L 397.19 213.87 C 397.19 214.47 397.67 214.96 398.27 214.96 "/>
+</svg>
+    </div>
+    <div class="brand-text">
+      <div class="brand-title">نموذج التحقق من استيفاء متطلبات الانتقال إلى مرحلة التحكيم</div>
+      <div class="brand-sub" id="subProjectName">جاري تحميل بيانات المشروع…</div>
+    </div>
+    <div class="project-pill"><span class="dot"></span><span class="mono" id="pillProjectId">—</span></div>
+    <div class="project-pill" id="deadlineCountdown" style="display:none;color:var(--gold-500);border-color:rgba(201,162,75,.35)"></div>
+    <div class="topbar-actions">
+      <button class="btn-topbar" id="btnTopSave" title="حفظ البيانات الآن">حفظ</button>
+      <button class="btn-topbar" id="btnLogout" title="تسجيل الخروج">خروج</button>
+    </div>
+  </div>
+  <div class="progress-shell"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-label"><span id="progressText">0% مكتمل</span><span id="draftStatus">لم يتم الحفظ بعد</span></div>
+</div>
+<svg class="eq-divider" viewBox="0 0 1180 22" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="7" width="3" height="10" rx="1.5" fill="#6B4FA0"/><rect x="55" y="3" width="3" height="16" rx="1.5" fill="#2FA36B"/>
+  <rect x="90" y="8" width="3" height="9" rx="1.5" fill="#C9A24B"/><rect x="125" y="5" width="3" height="13" rx="1.5" fill="#0E7C7B"/>
+  <rect x="160" y="7" width="3" height="10" rx="1.5" fill="#6B4FA0"/><rect x="195" y="2" width="3" height="17" rx="1.5" fill="#C9A24B"/>
+  <rect x="230" y="6" width="3" height="11" rx="1.5" fill="#2FA36B"/><rect x="265" y="4" width="3" height="14" rx="1.5" fill="#0E7C7B"/>
+  <rect x="300" y="7" width="3" height="10" rx="1.5" fill="#C9A24B"/><rect x="335" y="1" width="3" height="18" rx="1.5" fill="#6B4FA0"/>
+  <rect x="370" y="6" width="3" height="11" rx="1.5" fill="#2FA36B"/><rect x="405" y="5" width="3" height="13" rx="1.5" fill="#0E7C7B"/>
+  <rect x="440" y="8" width="3" height="9" rx="1.5" fill="#C9A24B"/><rect x="475" y="3" width="3" height="16" rx="1.5" fill="#6B4FA0"/>
+  <rect x="510" y="7" width="3" height="10" rx="1.5" fill="#2FA36B"/><rect x="545" y="4" width="3" height="14" rx="1.5" fill="#0E7C7B"/>
+  <rect x="580" y="6" width="3" height="11" rx="1.5" fill="#C9A24B"/><rect x="615" y="2" width="3" height="17" rx="1.5" fill="#6B4FA0"/>
+  <rect x="650" y="7" width="3" height="10" rx="1.5" fill="#2FA36B"/><rect x="685" y="5" width="3" height="13" rx="1.5" fill="#0E7C7B"/>
+  <rect x="720" y="8" width="3" height="9" rx="1.5" fill="#C9A24B"/><rect x="755" y="3" width="3" height="16" rx="1.5" fill="#6B4FA0"/>
+  <rect x="790" y="6" width="3" height="11" rx="1.5" fill="#2FA36B"/><rect x="825" y="4" width="3" height="14" rx="1.5" fill="#0E7C7B"/>
+  <rect x="860" y="7" width="3" height="10" rx="1.5" fill="#C9A24B"/><rect x="895" y="2" width="3" height="17" rx="1.5" fill="#6B4FA0"/>
+  <rect x="930" y="6" width="3" height="11" rx="1.5" fill="#2FA36B"/><rect x="965" y="5" width="3" height="13" rx="1.5" fill="#0E7C7B"/>
+  <rect x="1000" y="8" width="3" height="9" rx="1.5" fill="#C9A24B"/><rect x="1035" y="3" width="3" height="16" rx="1.5" fill="#6B4FA0"/>
+  <rect x="1070" y="6" width="3" height="11" rx="1.5" fill="#2FA36B"/><rect x="1105" y="4" width="3" height="14" rx="1.5" fill="#0E7C7B"/>
+  <rect x="1140" y="7" width="3" height="10" rx="1.5" fill="#C9A24B"/>
+</svg>
+
+<div class="layout">
+  <nav class="stepper" id="stepper"></nav>
+  <main class="panel">
+    <div id="announcementsBanner"></div>
+    <div class="section-card" id="sectionCard"></div>
+  </main>
+</div>
+
+<div class="footer-note">تعبئة هذا النموذج وإرساله لا تعني التأهل التلقائي إلى مرحلة التحكيم — تخضع جميع الطلبات للمراجعة من فريق البرنامج.</div>
+<div class="toast" id="toast"><span class="tdot"></span><span id="toastText"></span></div>
+
+<script>
+/* ============================================================
+   مكتبة أيقونات Lucide مضمَّنة محليًا (بدون أي اعتماد على CDN خارجي)
+   ============================================================ */
+const LUCIDE_ICONS = {
+  "chevron-up": `<path d="m18 15-6-6-6 6" />`,
+  "sparkles": `<path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" />`,
+  "megaphone": `<path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" /> <path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" /> <path d="M8 6v8" />`,
+  "bar-chart-3": `<path d="M3 3v16a2 2 0 0 0 2 2h16" /> <path d="M18 17V9" /> <path d="M13 17V5" /> <path d="M8 17v-3" />`,
+  "lock": `<rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" />`,
+  "check": `<path d="M20 6 9 17l-5-5" />`,
+  "save": `<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /> <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" /> <path d="M7 3v4a1 1 0 0 0 1 1h7" />`,
+  "file-text": `<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /> <path d="M14 2v5a1 1 0 0 0 1 1h5" /> <path d="M10 9H8" /> <path d="M16 13H8" /> <path d="M16 17H8" />`,
+  "video": `<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /> <rect x="2" y="6" width="14" height="12" rx="2" />`,
+  "log-out": `<path d="m16 17 5-5-5-5" /> <path d="M21 12H9" /> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />`,
+  "trash-2": `<path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />`,
+  "pencil": `<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" />`,
+  "triangle-alert": `<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" />`,
+  "arrow-right": `<path d="M5 12h14" /> <path d="m12 5 7 7-7 7" />`,
+  "ban": `<circle cx="12" cy="12" r="10" /> <path d="M4.929 4.929 19.07 19.071" />`,
+  "clipboard-list": `<rect width="8" height="4" x="8" y="2" rx="1" ry="1" /> <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /> <path d="M12 11h4" /> <path d="M12 16h4" /> <path d="M8 11h.01" /> <path d="M8 16h.01" />`,
+  "users": `<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <path d="M16 3.128a4 4 0 0 1 0 7.744" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <circle cx="9" cy="7" r="4" />`,
+  "x": `<path d="M18 6 6 18" /> <path d="m6 6 12 12" />`,
+  "paperclip": `<path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551" />`,
+  "id-card": `<path d="M16 10h2" /> <path d="M16 14h2" /> <path d="M6.17 15a3 3 0 0 1 5.66 0" /> <circle cx="9" cy="11" r="2" /> <rect x="2" y="5" width="20" height="14" rx="2" />`,
+  "key": `<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /> <path d="m21 2-9.6 9.6" /> <circle cx="7.5" cy="15.5" r="5.5" />`,
+  "rotate-ccw": `<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" />`,
+  "tent": `<path d="M3.5 21 14 3" /> <path d="M20.5 21 10 3" /> <path d="M15.5 21 12 15l-3.5 6" /> <path d="M2 21h20" />`,
+  "rocket": `<path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /> <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09" /> <path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z" /> <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05" />`,
+  "briefcase": `<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /> <rect width="20" height="14" x="2" y="6" rx="2" />`,
+  "search": `<path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" />`,
+  "crown": `<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /> <path d="M5 21h14" />`,
+  "hourglass": `<path d="M5 22h14" /> <path d="M5 2h14" /> <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /> <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />`,
+  "chevron-right": `<path d="m9 18 6-6-6-6" />`,
+  "chevron-left": `<path d="m15 18-6-6 6-6" />`,
+  "chevron-down": `<path d="m6 9 6 6 6-6" />`,
+  "download": `<path d="M12 15V3" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <path d="m7 10 5 5 5-5" />`,
+  "plus": `<path d="M5 12h14" /> <path d="M12 5v14" />`,
+  "upload": `<path d="M12 3v12" /> <path d="m17 8-5-5-5 5" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />`,
+  "building-2": `<path d="M10 12h4" /> <path d="M10 8h4" /> <path d="M14 21v-3a2 2 0 0 0-4 0v3" /> <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" /> <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />`,
+  "calendar": `<path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" />`,
+  "mail": `<path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /> <rect x="2" y="4" width="20" height="16" rx="2" />`,
+  "phone": `<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />`,
+  "eye": `<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /> <circle cx="12" cy="12" r="3" />`,
+};
+function icon(name, opts){
+  opts = opts || {};
+  const size = opts.size || 16;
+  const strokeWidth = opts.strokeWidth || 2;
+  const cls = opts.cls || '';
+  const body = LUCIDE_ICONS[name] || '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon ${cls}" style="vertical-align:-3px;flex:none">${body}</svg>`;
+}
+
+/* ============================================================
+   نموذج التحقق — حاضنة ابتكار 5
+   مرتبط بـ Supabase: الجلسة تأتي من login.html عبر sessionStorage
+   (project_id + team_leader_email فقط). الدخول مباشر بدون كلمة مرور
+   أو توكن — نفس نمط "إنفاذ" و"Innovation Marketplace" (بساطة وموثوقية أولًا).
+   ============================================================ */
+
+const SUPABASE_URL = "https://zxruviveljkywxbdqjxc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_URvlZnzYTl0CwwVxCikLvA_OeGSzhJh";
+
+let PROJECT_ID = null;
+let FORM_ID = null;
+let PROJECT_NAME = '';
+let ASSIGNED_COMMITTEE_NAME = null;
+let ASSIGNED_PERIOD = null; // { name, start_time, end_time }
+let JUDGING_CRITERIA_LIST = [];
+let JUDGING_PRESENTATION = null; // { file_name, storage_path, uploaded_at } أو null
+let ATTENDANCE_CONFIRMED = null; // null = لم يردّ بعد، true = سيحضر، false = لن يحضر
+let ATTENDANCE_CONFIRM_DEADLINE = null;
+let PRESENTATION_DEADLINE_PASSED = false;
+let PRESENTATION_DEADLINE_AT = null; // القيمة الفعلية للموعد، تُعرَض للمشارك
+let SUBMITTED_COMPLETION_PCT = null; // النسبة المجمَّدة وقت الإرسال — تُعرَض بدل الحساب الحي بعد الإرسال
+let IS_READONLY = false;         // true لو المشروع أصبح غير نشط — يمنع التعديل بدون ما يمنع الدخول للعرض
+let QUALIFICATION_BADGE = null;  // 'ok' | 'none' | null (null = غير منشورة أو غير محسوبة)
+let PUBLISHED_REPORT = null;
+const REQ_LABELS_AR = {
+  commercial_registration: "السجل التجاري",
+  camp_attendance: "حضور المعسكر",
+  team_size: "عدد أعضاء الفريق",
+  prototype: "النموذج الأولي",
+  pitch_deck: "العرض الاستثماري",
+  market_validation: "التحقق من احتياج السوق",
+};
+let SB = null;       // عميل عام — يُستخدم لكل عمليات النموذج (لا حاجة لتوكن خاص)
+let showingThankYou = false;
+let showingReport = false;
+let ALLOW_EDIT_AFTER_SUBMIT = true;
+let MAX_PDF_MB = 10;
+let MAX_VIDEO_MB = 200;
+let MAX_VIDEO_MINUTES = 5;
+let MAX_FILES_PER_FIELD = 5;
+let FORM_IS_OPEN = true;
+let FORM_DEADLINE = null; // Date أو null
+let FORM_CLOSED_REASON = null; // 'manual' | 'deadline' | null
+let FORM_STATUS = 'draft';
+let ACTIVE_ANNOUNCEMENTS = [];
+let countdownTimer = null;
+let closeWatchTimer = null;
+
+function computeClosedState(){
+  if(!FORM_IS_OPEN){ FORM_CLOSED_REASON = 'manual'; return true; }
+  if(FORM_DEADLINE && new Date() >= FORM_DEADLINE){ FORM_CLOSED_REASON = 'deadline'; return true; }
+  FORM_CLOSED_REASON = null;
+  return false;
+}
+let SB_AUTH = null;  // نفس العميل — أُبقي على الاسمين لتوافق باقي الكود دون تعديل كل استدعاء
+
+/* ---------------- حارس الجلسة: يشترط دخولًا صحيحًا سابقًا عبر login.html ---------------- */
+function getSession(){
+  try{
+    const raw = sessionStorage.getItem('ib5_session');
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(!s || !s.project_id) return null;
+    return s;
+  }catch(e){ return null; }
+}
+function requireSessionOrRedirect(){
+  const params = new URLSearchParams(window.location.search);
+  const urlProject = params.get('project');
+  const session = getSession();
+  if(!session || (urlProject && urlProject !== session.project_id)){
+    window.location.href = 'login.html' + (urlProject ? ('?project='+encodeURIComponent(urlProject)) : '');
+    return null;
+  }
+  return session;
+}
+
+/* ============================================================
+   الأقسام والأسئلة — تُحمَّل ديناميكيًا من Supabase (form_sections +
+   form_questions) بدل أن تكون ثابتة بالكود. الأقسام ذات الواجهة الخاصة
+   (فريق العمل، مراحل النموذج، قائمة التحقق، الإقرار) تحتفظ بعناصرها
+   الهيكلية الخاصة، لكن الحقول العادية داخلها — وكل حقول الأقسام الأخرى —
+   ديناميكية بالكامل: أي تعديل/إضافة/حذف من لوحة التحكم ينعكس هنا مباشرة.
+   ============================================================ */
+
+// ثابت هيكلي فقط لواجهة منتقي المراحل (العناوين والأوصاف) — لا يُدار من
+// لوحة التحكم لأنه مرتبط بتصميم بصري خاص، وليس سؤالًا عاديًا.
+const STAGES = [
+  {v:"idea", n:"5.1", t:"مرحلة الفكرة", d:"الفكرة مصاغة دون تصميم أو نموذج مادي"},
+  {v:"poc", n:"5.2", t:"نموذج إثبات مفهوم (PoC)", d:"إثبات تقني مبسّط دون تجربة مستخدم كاملة"},
+  {v:"prototype", n:"5.3", t:"نموذج أولي (Protoyping)", d:"نموذج أولي بوظائف محدودة أو أساسية يمكن تجربته"},
+  {v:"mvp", n:"5.4", t:"منتج أولي قابل للاستخدام (MVP)", d:"منتج فعلي يحقق الحاجة الأساسية للمستخدم — وليس نموذجًا تصميميًا"},
+  {v:"market", n:"5.5", t:"منتج/خدمة مطروحة في السوق", d:"متاح تجاريًا"},
+];
+const STAGE_QUALIFIES_IDX = 1; // فهرس نموذج إثبات المفهوم (PoC) فأعلى يستوفي
+
+/* ---------------- الحالة ---------------- */
+const state = {
+  current: 1,
+  values: {},
+  members: [ {name:"",phone:"",email:"",role:"",spec:"",specOther:"",camp:"",title:""}, {name:"",phone:"",email:"",role:"",spec:"",specOther:"",camp:"",title:""} ],
+  files: {}, // fieldId -> [{name,size,id,storage_path}]
+  videoMode: {}, // fieldId -> 'upload' | 'link'
+};
+
+let SECTIONS = []; // تُعبَّى بواسطة loadFormDefinition() قبل أول عرض
+
+function setVal(id,v){ state.values[id]=v; }
+function getVal(id){ return state.values[id] ?? ""; }
+
+/* ---------------- مقيّم الشروط الشرطية (يقرأ condition_expr القادم من القاعدة) ---------------- */
+function evalCond(cond){
+  if(!cond) return true;
+  if(cond.all) return cond.all.every(c=>evalCond(c));
+  const val = getVal(cond.field);
+  switch(cond.op){
+    case 'eq': return val === cond.value;
+    case 'neq': return val !== cond.value;
+    case 'in': return Array.isArray(cond.value) && cond.value.includes(val);
+    case 'not_in': return Array.isArray(cond.value) && !cond.value.includes(val);
+    case 'includes': return Array.isArray(val) && val.includes(cond.value);
+    case 'not_empty': return val !== undefined && val !== null && String(val).trim() !== '';
+    default: return true;
+  }
+}
+
+/* ---------------- تحويل صف form_questions إلى تعريف حقل يفهمه المُصيِّر ---------------- */
+function buildFieldFromDB(q){
+  const f = { id: q.field_key, label: q.label, type: q.type, required: q.required };
+  if(q.options && q.options.length) f.options = q.options;
+  if(q.multiple) f.multiple = true;
+  if(q.type === 'file') f.accept = '.pdf';
+  if(q.hint) f.hint = q.hint;
+  if(q.condition_expr) f.condition = ()=>evalCond(q.condition_expr);
+
+  // استثناءات هيكلية معروفة — سلوك خاص مربوط بمعرّف الحقل نفسه، لا يُدار من
+  // لوحة التحكم لأنه جزء من منطق النموذج الأساسي (مو نص/خيارات فقط):
+  if(q.field_key === 'f1_1') f.readOnly = true;                 // رقم المشروع يُعبَّى تلقائيًا دائمًا
+  // بيانات ثابتة من سجل المشروع (eligible_projects) — تُقفَل فقط إذا كانت
+  // متوفرة فعليًا؛ لو كانت فارغة (مثلًا جوال ناقص من الاستيراد) تبقى قابلة
+  // للتعبئة كي لا يعلق المشارك بدون طريقة لإدخالها.
+  if(['f1_3','f1_4','f1_5','f1_7','f1_8'].includes(q.field_key)) f.lockWhenFilled = true;
+  if(q.field_key === 'f9_3'){                                    // خيارات أسماء الحضور تُشتق من أعضاء الفريق فعليًا
+    f.optionsFn = ()=>state.members.map(m=>m.name).filter(Boolean);
+    delete f.options;
+  }
+  return f;
+}
+
+/* ---------------- تحميل تعريف النموذج كاملًا من Supabase ---------------- */
+async function loadFormDefinition(){
+  const { data: secRows, error: secErr } = await SB.from('form_sections')
+    .select('*').eq('is_active', true).order('order_index');
+  if(secErr) throw secErr;
+  const { data: qRows, error: qErr } = await SB.from('form_questions')
+    .select('*').eq('is_active', true).order('order_index');
+  if(qErr) throw qErr;
+
+  SECTIONS = (secRows||[]).map(s=>{
+    const obj = {
+      id: s.id, key: s.section_key || null,
+      title: s.title, desc: s.description || '',
+      banner: s.banner || undefined,
+      // f5_1 وf11_1 لهما عناصر واجهة خاصة مُهيكلة (منتقي المراحل، شارة الإقرار)
+      // مرسومة يدويًا في renderStageSection/renderDeclareSection — نستبعدهما هنا
+      // كي لا يُرسَما مرتين، مع بقائهما قابلين للتعديل نصيًا من لوحة التحكم.
+      fields: (qRows||[])
+        .filter(q=>q.section_id===s.id && !['f5_1','f11_1'].includes(q.field_key))
+        .map(buildFieldFromDB),
+    };
+    if(s.section_key === 'team') obj.isTeamSection = true;
+    if(s.section_key === 'proto') obj.isStageSection = true;
+    if(s.section_key === 'checklist') obj.isChecklistSection = true;
+    if(s.section_key === 'declare') obj.isDeclareSection = true;
+    return obj;
+  });
+
+  if(SECTIONS.length === 0){
+    throw new Error('لم يتم تحميل أي أقسام من قاعدة البيانات — تأكد من تنفيذ schema.sql وأن الأقسام نشطة.');
+  }
+}
+
+function stageQualifies(){
+  const v = getVal("f5_1");
+  const idx = STAGES.findIndex(s=>s.v===v);
+  return idx >= STAGE_QUALIFIES_IDX;
+}
+
+/* ---------------- أدوات مساعدة ---------------- */
+/* تنقية أي نص قبل إدراجه في innerHTML — للحماية من حقن HTML/JS، خصوصًا في
+   محتوى الإعلانات (يعرضها كل مشارك يفتح الصفحة). */
+function escHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+/* بصمة SHA-256 لمحتوى الملف — تُستخدم لاحقًا لرصد التكرار (نفس الملف
+   بحقلين مختلفين، أو نفس الملف بطلبات مختلفة). لا نمنع الرفع أبدًا لو فشل
+   حسابها لأي سبب — مجرد بيانات إضافية للفحص، مو شرط رفع. */
+async function computeFileHash(file){
+  try{
+    const buf = await file.arrayBuffer();
+    const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){ return null; }
+}
+function fmtSize(bytes){
+  if(bytes<1024) return bytes+" B";
+  if(bytes<1024*1024) return (bytes/1024).toFixed(0)+" KB";
+  return (bytes/1024/1024).toFixed(1)+" MB";
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastText').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+function visibleFields(section){
+  return section.fields.filter(f=>!f.condition||f.condition(state));
+}
+
+/* ---------------- التقدم العام ---------------- */
+function computeSectionCompletion(section){
+  let total=0, done=0;
+  if(section.isTeamSection){
+    state.members.forEach(m=>{
+      ["name","phone","email","role","spec","camp"].forEach(k=>{ total++; if(m[k]) done++; });
+    });
+  }
+  visibleFields(section).forEach(f=>{
+    if(!f.required) return;
+    total++;
+    const val = state.values[f.id];
+    if(f.type==="file"){
+      if((state.files[f.id]||[]).length>0) done++;
+    } else if(f.type==="video"){
+      const mode=state.videoMode[f.id]||"upload";
+      if(mode==="upload"){ if((state.files[f.id]||[]).length>0) done++; }
+      else { if(val) done++; }
+    } else if(f.type==="multiselect"){
+      if(val && val.length>0) done++;
+    } else {
+      if(val!==undefined && val!==null && String(val).trim()!=="") done++;
+    }
+  });
+  if(section.isDeclareSection){ total++; if(state.values.f11_1) done++; }
+  return {total,done};
+}
+function overallProgress(){
+  let total=0,done=0;
+  SECTIONS.forEach(s=>{ const c=computeSectionCompletion(s); total+=c.total; done+=c.done; });
+  return total===0?0:Math.round(done/total*100);
+}
+function sectionStatus(section){
+  const c=computeSectionCompletion(section);
+  if(c.total===0) return "empty";
+  if(c.done===0) return "empty";
+  if(c.done===c.total) return "done";
+  return "warn";
+}
+
+/* ---------------- الشريط الجانبي ---------------- */
+function renderStepper(){
+  const el=document.getElementById('stepper');
+  el.innerHTML = SECTIONS.map((s,idx)=>{
+    const st=sectionStatus(s);
+    const cls = ["step-item"];
+    if(s.id===state.current) cls.push("active");
+    if(st==="done") cls.push("done");
+    if(st==="warn") cls.push("warn");
+    return `<div class="${cls.join(' ')}" data-goto="${s.id}">
+      <div class="step-num">${st==='done'?icon('check',{size:13}):idx+1}</div>
+      <div class="step-title">${s.title}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-goto]').forEach(n=>{
+    n.addEventListener('click',()=>{
+      if(showingThankYou && (!ALLOW_EDIT_AFTER_SUBMIT || IS_READONLY)) return; // التعديل بعد الإرسال أو بعد الإقفال غير متاح
+      showingThankYou = false;
+      showingReport = false;
+      state.current=parseInt(n.dataset.goto); renderAll(); window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+}
+
+/* ---------------- عرض حقل عام ---------------- */
+function labelHTML(f){
+  return `<div class="field-label">${f.label}${f.required?'<span class="req-star">*</span>':''}</div>`;
+}
+function renderField(f){
+  const val = getVal(f.id);
+  const locked = f.readOnly || (f.lockWhenFilled && val);
+  if(locked && f.lockWhenFilled && !f.readOnly) f.hint = 'بيانات ثابتة من سجل تسجيلك في المنصة — تواصل مع فريق البرنامج لتصحيحها.';
+  let body = "";
+  switch(f.type){
+    case "text": case "email": case "url": case "number": case "date":
+      body = `<input type="${f.type}" id="in_${f.id}" data-id="${f.id}" value="${val?String(val).replace(/"/g,'&quot;'):''}" ${locked?'disabled':''} ${f.id==='f9_2'?`max="${state.members.length}" min="0"`:''} placeholder="${locked?'':''}">`;
+      if(f.id==='f9_2') f.hint = `الحد الأقصى ${state.members.length} (عدد أعضاء الفريق المسجَّلين)`;
+      break;
+    case "textarea":
+      body = `<textarea id="in_${f.id}" data-id="${f.id}">${val?String(val):''}</textarea>`;
+      break;
+    case "select":
+      body = `<select id="in_${f.id}" data-id="${f.id}" ${locked?'disabled':''}>
+        <option value="" ${!val?'selected':''}>اختر…</option>
+        ${f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}
+      </select>`;
+      break;
+    case "radio":
+      body = `<div class="choice-row" data-radio="${f.id}">${f.options.map(o=>`
+        <label class="choice-pill radio ${val===o?'selected':''}" data-opt="${o}">
+          <span class="ck"></span>${o}
+        </label>`).join('')}</div>`;
+      break;
+    case "multiselect": {
+      const opts = f.optionsFn ? f.optionsFn() : f.options;
+      const arr = Array.isArray(val)?val:[];
+      if(opts.length===0){
+        body = `<div class="field-hint">لا توجد خيارات متاحة بعد — أكمل قسم فريق العمل أولًا.</div>`;
+      } else {
+        body = `<div class="choice-row" data-multi="${f.id}">${opts.map(o=>`
+          <label class="choice-pill ${arr.includes(o)?'selected':''}" data-opt="${o}">
+            <span class="ck"></span>${o}
+          </label>`).join('')}</div>`;
+      }
+      break;
+    }
+    case "file": {
+      const files = state.files[f.id]||[];
+      body = IS_READONLY ? '' : `<div class="file-drop" data-filetrigger="${f.id}">
+        <div class="fi-title">اضغط لإرفاق ${f.multiple?'ملف أو أكثر':'ملف'} (PDF)</div>
+        <div class="fi-sub">الحد الأقصى ${MAX_PDF_MB} م.ب لكل ملف${f.multiple?` — حتى ${MAX_FILES_PER_FIELD} ملفات`:''}</div>
+      </div>
+      <input type="file" id="file_${f.id}" data-fileinput="${f.id}" accept="${f.accept||'.pdf'}" ${f.multiple?'multiple':''} style="display:none">`;
+      body += `<div class="file-list">${files.map((fl,i)=>`
+        <div class="file-chip"><span class="fc-name">${icon('file-text',{size:13})} ${fl.name}</span><span class="fc-size">${fmtSize(fl.size)}</span>${IS_READONLY?'':`<button type="button" class="fc-remove" data-removefile="${f.id}" data-idx="${i}">إزالة</button>`}</div>
+      `).join('')}</div>`;
+      break;
+    }
+    case "video": {
+      const mode = state.videoMode[f.id]||"upload";
+      const files = state.files[f.id]||[];
+      body = `<div class="video-toggle">
+        <button type="button" class="vt-btn ${mode==='upload'?'active':''}" data-vmode="${f.id}" data-mode="upload">رفع فيديو</button>
+        <button type="button" class="vt-btn ${mode==='link'?'active':''}" data-vmode="${f.id}" data-mode="link">رابط فيديو خاص</button>
+      </div>`;
+      if(mode==="upload"){
+        body += IS_READONLY ? '' : `<div class="file-drop" data-filetrigger="${f.id}">
+          <div class="fi-title">اضغط لرفع الفيديو</div>
+          <div class="fi-sub">الحد الأقصى ${MAX_VIDEO_MB} م.ب ومدة ${MAX_VIDEO_MINUTES} دقائق</div>
+        </div>
+        <input type="file" id="file_${f.id}" data-fileinput="${f.id}" accept="video/*" style="display:none">`;
+        body += `<div class="file-list">${files.map((fl,i)=>`
+          <div class="file-chip"><span class="fc-name">${icon('video',{size:13})} ${fl.name}</span><span class="fc-size">${fmtSize(fl.size)}</span>${IS_READONLY?'':`<button type="button" class="fc-remove" data-removefile="${f.id}" data-idx="${i}">إزالة</button>`}</div>
+        `).join('')}</div>`;
+      } else {
+        body += `<input type="url" id="in_${f.id}" data-id="${f.id}" value="${val?String(val).replace(/"/g,'&quot;'):''}" placeholder="https://‎…">`;
+      }
+      break;
+    }
+  }
+  return `<div class="field" id="fld_${f.id}">${labelHTML(f)}${body}${f.hint?`<div class="field-hint">${f.hint}</div>`:''}<div class="error-text">هذا الحقل مطلوب</div></div>`;
+}
+
+/* ---------------- عرض قسم الفريق ---------------- */
+/* مزامنة بيانات قائد الفريق (العضو الأول) من إجابات القسم الأول تلقائيًا —
+   لا داعي لإعادة إدخال اسم/هوية/جوال/بريد قائد الفريق بما إنها معروفة مسبقًا. */
+function syncLeaderFromProjectInfo(){
+  if(!state.members[0]) return;
+  state.members[0].name = getVal('f1_5') || '';
+  state.members[0].phone = getVal('f1_7') || '';
+  state.members[0].email = getVal('f1_8') || '';
+  state.members[0].role = 'قائد الفريق';
+}
+const SPECIALIZATIONS = ["الهندسة والتقنية","تطوير البرمجيات وتقنية المعلومات","إدارة الأعمال وريادة الأعمال","التسويق والمبيعات","التصميم وتجربة المستخدم","المالية والمحاسبة","العلوم الطبية والصحية","الذكاء الاصطناعي وعلوم البيانات","الهندسة الصناعية والتصنيع","القانون والشؤون التنظيمية","الموارد البشرية","العلوم البيئية والاستدامة","أخرى"];
+function findDuplicateValues(list, key, normalize){
+  const counts = {};
+  list.forEach(m=>{
+    const raw = (m[key]||'').trim();
+    if(!raw) return;
+    const v = normalize ? normalize(raw) : raw;
+    counts[v] = (counts[v]||0)+1;
+  });
+  return new Set(Object.keys(counts).filter(v=>counts[v]>1));
+}
+function renderTeamSection(section){
+  syncLeaderFromProjectInfo();
+  const dupPhones = findDuplicateValues(state.members, 'phone', v=>v.replace(/\s+/g,''));
+  const dupEmails = findDuplicateValues(state.members, 'email', v=>v.toLowerCase());
+  let html = state.members.map((m,i)=>{
+    const isLeader = i===0;
+    const phoneDup = dupPhones.has((m.phone||'').replace(/\s+/g,''));
+    const emailDup = dupEmails.has((m.email||'').toLowerCase());
+    return `
+    <div class="member-card">
+      <div class="member-head">
+        <span class="member-tag">${isLeader?'قائد الفريق':'عضو '+(i+1)}</span>
+        ${state.members.length>2 && i>0 ? `<button type="button" class="member-remove" data-removemember="${i}">إزالة العضو</button>`:''}
+      </div>
+      ${isLeader ? `<div class="field-hint" style="margin-bottom:14px">بيانات قائد الفريق (الاسم، الجوال، البريد) مأخوذة تلقائيًا من القسم الأول — عدّلها من هناك إذا احتجت تصحيحها.</div>` : ''}
+      <div class="field"><div class="field-label">الاسم الرباعي<span class="req-star">*</span></div><input type="text" data-member="${i}" data-mkey="name" value="${m.name.replace(/"/g,'&quot;')}" ${isLeader?'disabled':''}></div>
+      <div class="two-col">
+        <div class="field ${phoneDup?'has-error':''}"><div class="field-label">رقم الجوال<span class="req-star">*</span></div><input type="text" data-member="${i}" data-mkey="phone" value="${m.phone.replace(/"/g,'&quot;')}" ${isLeader?'disabled':''}>${phoneDup?'<div class="error-text" style="display:block">هذا الرقم مستخدَم لعضو آخر في الفريق</div>':''}</div>
+        <div class="field ${emailDup?'has-error':''}"><div class="field-label">البريد الإلكتروني<span class="req-star">*</span></div><input type="email" data-member="${i}" data-mkey="email" value="${m.email.replace(/"/g,'&quot;')}" ${isLeader?'disabled':''}>${emailDup?'<div class="error-text" style="display:block">هذا البريد مستخدَم لعضو آخر في الفريق</div>':''}</div>
+      </div>
+      <div class="two-col">
+        <div class="field"><div class="field-label">الدور الرئيس في المشروع<span class="req-star">*</span></div>
+          ${isLeader
+            ? `<input type="text" value="قائد الفريق" disabled>`
+            : `<select data-member="${i}" data-mkey="role">
+                <option value="">اختر…</option>
+                ${["التطوير التقني","تطوير المنتج أو الخدمة","نموذج العمل التجاري","التسويق والمبيعات","الإدارة المالية","العمليات","التصميم وتجربة المستخدم","البحث والتطوير","دور آخر"].map(o=>`<option value="${o}" ${m.role===o?'selected':''}>${o}</option>`).join('')}
+              </select>`}
+        </div>
+        <div class="field"><div class="field-label">التخصص أو مجال الخبرة<span class="req-star">*</span></div>
+          <select data-member="${i}" data-mkey="spec">
+            <option value="">اختر…</option>
+            ${SPECIALIZATIONS.map(o=>`<option value="${o}" ${m.spec===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${m.spec==='أخرى' ? `<div class="field"><div class="field-label">حدّد التخصص<span class="req-star">*</span></div><input type="text" data-member="${i}" data-mkey="specOther" value="${(m.specOther||'').replace(/"/g,'&quot;')}" placeholder="اكتب التخصص"></div>` : ''}
+      <div class="two-col">
+        <div class="field"><div class="field-label">هل شارك في المعسكر؟<span class="req-star">*</span></div>
+          <select data-member="${i}" data-mkey="camp"><option value="">اختر…</option><option value="نعم" ${m.camp==='نعم'?'selected':''}>نعم</option><option value="لا" ${m.camp==='لا'?'selected':''}>لا</option></select>
+        </div>
+        <div class="field"><div class="field-label">صفته في المنشأة</div>
+          <select data-member="${i}" data-mkey="title"><option value="">اختياري…</option>${["مالك","شريك","مدير","مفوض","عضو في فريق المشروع"].map(o=>`<option value="${o}" ${m.title===o?'selected':''}>${o}</option>`).join('')}</select>
+        </div>
+      </div>
+    </div>
+  `;}).join('');
+  html += `<div class="add-member-btn" id="addMemberBtn">+ إضافة عضو جديد</div>`;
+  html += `<div style="height:22px"></div>`;
+  html += visibleFields(section).map(renderField).join('');
+  return html;
+}
+
+/* ---------------- عرض قسم مرحلة التطوير ---------------- */
+function renderStageSection(section){
+  const cur = getVal("f5_1");
+  let html = `<div class="stage-list">${STAGES.map(s=>`
+    <div class="stage-opt ${cur===s.v?'selected':''}" data-stage="${s.v}">
+      <span class="ck"></span>
+      <div class="stage-txt"><span class="stage-num">${s.n}</span> <b>${s.t}</b><span>${s.d}</span></div>
+    </div>
+  `).join('')}</div>`;
+  if(cur){
+    html += `<div style="margin-top:18px">${visibleFields(section).map(renderField).join('')}</div>`;
+  }
+  return html;
+}
+
+/* ---------------- قسم قائمة التحقق ---------------- */
+function deriveChecklist(){
+  const cr1=getVal("f2_1");
+  const crStatus = cr1==="نعم" ? "ok" : (cr1==="لا"?"no":"pending");
+  const campStatus = getVal("f3_2")==="نعم"?"ok":(getVal("f3_2")==="لا"?"mid":"pending");
+  const membersFilled = state.members.filter(m=>m.name).length;
+  const teamStatus = membersFilled>=2 ? "ok":"no";
+  const stageSet = !!getVal("f5_1");
+  const protoStatus = stageSet ? (stageQualifies()?"ok":"no") : "pending";
+  const pitchVal = getVal("f6_1");
+  let pitchStatus="pending";
+  if(pitchVal==="مكتمل وفق النموذج المعتمد") pitchStatus="ok";
+  else if(["مكتمل مع تعديلات محدودة","مكتمل بصيغة مختلفة"].includes(pitchVal)) pitchStatus="mid";
+  else if(["غير مكتمل","لم يبدأ"].includes(pitchVal)) pitchStatus="no";
+  const mktVal = getVal("f7_1");
+  let mktStatus="pending";
+  if(mktVal==="تحقق مكتمل") mktStatus="ok";
+  else if(mktVal==="تحقق جزئي") mktStatus="mid";
+  else if(["تحقق جارٍ","لم يبدأ التحقق"].includes(mktVal)) mktStatus="no";
+  return [
+    {label:"السجل التجاري",status:crStatus},
+    {label:"حضور المعسكر",status:campStatus},
+    {label:"عدد أعضاء الفريق",status:teamStatus},
+    {label:"النموذج الأولي",status:protoStatus},
+    {label:"العرض الاستثماري",status:pitchStatus},
+    {label:"التحقق من احتياج السوق",status:mktStatus},
+  ];
+}
+function badgeHTML(status){
+  const map={ok:["مستوفى","ok"],no:["غير مستوفى","no"],mid:["يحتاج تحقق","mid"],pending:["لم يُستكمل بعد","mid"]};
+  const [txt,cls]=map[status];
+  return `<span class="badge ${cls}">${txt}</span>`;
+}
+function renderChecklistSection(section){
+  const items = deriveChecklist();
+  let html = `<div class="checklist-grid">${items.map(it=>`
+    <div class="checklist-row"><span class="cr-label">${it.label}</span>${badgeHTML(it.status)}</div>
+  `).join('')}</div>`;
+  html += visibleFields(section).map(renderField).join('');
+  return html;
+}
+
+/* ---------------- قسم الإقرار ---------------- */
+function renderDeclareSection(section){
+  let html = `<div class="declaration-box">
+    أُقر أنا الموقّع أدناه، بصفتي <b>قائد الفريق</b>، بما يلي:<br>
+    (١) صحة ودقة جميع البيانات الواردة في هذا النموذج.<br>
+    (٢) صحة جميع المستندات والمرفقات المقدَّمة وخلوّها من أي تزوير أو تحريف.<br>
+    (٣) أحقية الفريق في تقديم هذا المشروع وجميع المرفقات المرتبطة به.<br>
+    (٤) عِلمي بأن تعبئة هذا النموذج وإرساله لا يعني التأهل التلقائي إلى مرحلة التحكيم.<br>
+    (٥) خضوع هذا الطلب لإجراءات المراجعة والتحقق من قِبل فريق البرنامج.<br>
+    (٦) التزامي بإبلاغ إدارة البرنامج فورًا بأي تغييرات جوهرية تطرأ على البيانات الواردة أعلاه.<br>
+    (٧) السماح لإدارة البرنامج باستخدام البيانات والمرفقات المقدَّمة لأغراض مراجعة وتقييم المشاركة في البرنامج.
+  </div>`;
+  html += `<label class="choice-pill ${state.values.f11_1?'selected':''}" id="declareCheck" style="width:100%;justify-content:flex-start;margin-bottom:20px"><span class="ck"></span>أوافق على الإقرار أعلاه وأتعهد بصحة ما ورد فيه<span class="req-star">*</span></label>`;
+  html += visibleFields(section).map(renderField).join('');
+  return html;
+}
+
+/* ---------------- عرض القسم الحالي ---------------- */
+const ACCENT_CYCLE = ['#0E7C7B','#6B4FA0','#C9A24B','#2FA36B'];
+function renderSection(){
+  const sectionIndex = SECTIONS.findIndex(s=>s.id===state.current);
+  const section = SECTIONS[sectionIndex] || SECTIONS[0];
+  const isFirst = sectionIndex <= 0;
+  const isLast = sectionIndex === SECTIONS.length - 1;
+  const card = document.getElementById('sectionCard');
+  const accent = ACCENT_CYCLE[sectionIndex % ACCENT_CYCLE.length];
+  let inner = '';
+  if(FORM_STATUS === 'submitted'){
+    inner += `<div style="padding:16px 20px 0"><button class="btn btn-ghost btn-sm" id="btnBackToResult">${icon('arrow-right',{size:13})} رجوع لنتيجة الاستيفاء</button></div>`;
+  }
+  inner += `<div class="section-head">
+    <div class="section-eyebrow">القسم ${sectionIndex+1} / ${SECTIONS.length}</div>
+    <div class="section-title"><span class="section-num-badge" style="background:${accent}">${sectionIndex+1}</span>${section.title}</div>
+    <div class="section-desc">${section.desc}</div>
+  </div>`;
+  if(section.banner) inner += `<div class="req-banner"><b>تنبيه:</b>&nbsp;${section.banner}</div>`;
+  if(IS_READONLY) inner += `<div class="req-banner" style="background:var(--danger-100);color:var(--danger)"><b>🔒 هذا النموذج مقفل للتعديل حاليًا من قبل فريق البرنامج.</b>&nbsp;تقدر تتصفح بياناتك، لكن أي تعديل لن يُحفظ.</div>`;
+
+  if(section.isTeamSection) inner += renderTeamSection(section);
+  else if(section.isStageSection) inner += renderStageSection(section);
+  else if(section.isChecklistSection) inner += renderChecklistSection(section);
+  else if(section.isDeclareSection) inner += renderDeclareSection(section);
+  else inner += visibleFields(section).map(renderField).join('');
+
+  inner += `<div class="nav-row">
+    <button class="btn btn-ghost" id="btnPrev" ${isFirst?'disabled':''}>القسم السابق</button>
+    <div class="side-actions">
+      ${IS_READONLY ? '' : `<button class="btn btn-ghost" id="btnSaveDraft">حفظ كمسودة</button>
+      ${isLast
+        ? `<button class="btn btn-gold" id="btnSubmit">إرسال النموذج</button>`
+        : `<button class="btn btn-primary" id="btnNext">القسم التالي</button>`}`}
+      ${IS_READONLY && !isLast ? `<button class="btn btn-primary" id="btnNext">القسم التالي</button>` : ''}
+    </div>
+  </div>`;
+  card.innerHTML = inner;
+  bindSectionEvents(section);
+}
+/* ---------------- ربط الأحداث ---------------- */
+function bindSectionEvents(section){
+  document.querySelectorAll('[data-id]').forEach(el=>{
+    el.addEventListener('input',e=>{ setVal(el.dataset.id, el.value); refreshLight(); });
+    el.addEventListener('change',e=>{ setVal(el.dataset.id, el.value); renderAll(); });
+  });
+  document.querySelectorAll('[data-radio]').forEach(group=>{
+    group.querySelectorAll('.choice-pill').forEach(p=>{
+      p.addEventListener('click',()=>{ setVal(group.dataset.radio, p.dataset.opt); renderAll(); });
+    });
+  });
+  document.querySelectorAll('[data-multi]').forEach(group=>{
+    group.querySelectorAll('.choice-pill').forEach(p=>{
+      p.addEventListener('click',()=>{
+        const id=group.dataset.multi;
+        const arr = Array.isArray(state.values[id])?state.values[id].slice():[];
+        const opt=p.dataset.opt;
+        const idx=arr.indexOf(opt);
+        if(idx>-1) arr.splice(idx,1); else arr.push(opt);
+        state.values[id]=arr;
+        renderAll();
+      });
+    });
+  });
+  document.querySelectorAll('[data-filetrigger]').forEach(drop=>{
+    drop.addEventListener('click',()=>{ document.getElementById('file_'+drop.dataset.filetrigger).click(); });
+  });
+  document.querySelectorAll('[data-fileinput]').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      if(IS_READONLY){ showToast('🔒 هذا النموذج مقفل للتعديل حاليًا — تعذّر رفع أي ملف.'); inp.value=''; return; }
+      const id=inp.dataset.fileinput;
+      const list = state.files[id]||[];
+      const fdef = findFieldDef(id);
+      const maxSize = fdef && fdef.type==='video' ? MAX_VIDEO_MB*1024*1024 : MAX_PDF_MB*1024*1024;
+      const filesToUpload = [];
+      Array.from(inp.files).forEach(file=>{
+        if(fdef && fdef.type!=='video' && !file.name.toLowerCase().endsWith('.pdf')){
+          showToast('تعذّر رفع الملف — يُقبل PDF فقط'); return;
+        }
+        if(file.size>maxSize){ showToast(`تجاوز الحجم المسموح به (الحد الأقصى ${fdef && fdef.type==='video' ? MAX_VIDEO_MB : MAX_PDF_MB} م.ب)`); return; }
+        if(list.length>=MAX_FILES_PER_FIELD && fdef.multiple){ showToast(`الحد الأقصى ${MAX_FILES_PER_FIELD} ملفات لهذا الحقل`); return; }
+        filesToUpload.push(file);
+      });
+      if(filesToUpload.length===0) return;
+
+      showToast('جارٍ رفع الملف…');
+      for(const file of filesToUpload){
+        try{
+          // Supabase Storage لا يقبل مفاتيح تحتوي أحرفًا عربية أو رموزًا خاصة —
+          // نستخدم اسمًا آمنًا (ASCII فقط) لمسار التخزين الفعلي، ونحتفظ بالاسم
+          // العربي الأصلي في عمود file_name للعرض فقط.
+          const ext = (file.name.split('.').pop() || 'dat').replace(/[^a-zA-Z0-9]/g,'').toLowerCase() || 'dat';
+          const safeName = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+          const storagePath = `${PROJECT_ID}/${id}/${safeName}`;
+          const fileHash = await computeFileHash(file);
+          const { error: upErr } = await SB_AUTH.storage.from('form-attachments').upload(storagePath, file, { upsert: false });
+          if(upErr) throw upErr;
+
+          // إذا كان الحقل يستبدل ملفًا سابقًا (غير متعدد)، احذف القديم من التخزين وقاعدة البيانات أولًا
+          if(!fdef.multiple && list.length>=1){
+            const old = list.pop();
+            if(old.storage_path) await SB_AUTH.storage.from('form-attachments').remove([old.storage_path]);
+            if(old.id) await SB_AUTH.from('form_files').delete().eq('id', old.id);
+          }
+
+          const { data: fileRow, error: insErr } = await SB_AUTH.from('form_files').insert({
+            form_id: FORM_ID, field_key: id, storage_path: storagePath,
+            file_name: file.name, mime_type: file.type, size_bytes: file.size, file_hash: fileHash,
+          }).select().single();
+          if(insErr) throw insErr;
+
+          list.push({ name: file.name, size: file.size, id: fileRow.id, storage_path: storagePath });
+        } catch(err){
+          showToast('تعذّر رفع "' + file.name + '": ' + (err.message || 'خطأ غير معروف'));
+        }
+      }
+      state.files[id]=list;
+      renderAll();
+    });
+  });
+  document.querySelectorAll('[data-removefile]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(IS_READONLY){ showToast('🔒 هذا النموذج مقفل للتعديل حاليًا — تعذّر حذف أي ملف مرفق.'); return; }
+      const id=btn.dataset.removefile, idx=parseInt(btn.dataset.idx);
+      const fileEntry = state.files[id][idx];
+      state.files[id].splice(idx,1);
+      renderAll();
+      try{
+        if(fileEntry.storage_path) await SB_AUTH.storage.from('form-attachments').remove([fileEntry.storage_path]);
+        if(fileEntry.id) await SB_AUTH.from('form_files').delete().eq('id', fileEntry.id);
+      } catch(err){
+        showToast('تعذّر حذف الملف من الخادم — قد يظهر مجددًا عند إعادة التحميل');
+      }
+    });
+  });
+  document.querySelectorAll('[data-vmode]').forEach(btn=>{
+    btn.addEventListener('click',()=>{ state.videoMode[btn.dataset.vmode]=btn.dataset.mode; renderAll(); });
+  });
+  document.querySelectorAll('[data-member]').forEach(el=>{
+    const evt = el.tagName==='SELECT' ? 'change' : 'input';
+    el.addEventListener(evt,()=>{
+      state.members[parseInt(el.dataset.member)][el.dataset.mkey]=el.value;
+      if(el.tagName==='SELECT') renderAll(); else refreshLight();
+    });
+  });
+  const addBtn = document.getElementById('addMemberBtn');
+  if(addBtn) addBtn.addEventListener('click',()=>{
+    state.members.push({name:"",phone:"",email:"",role:"",spec:"",specOther:"",camp:"",title:""});
+    renderAll();
+  });
+  document.querySelectorAll('[data-removemember]').forEach(btn=>{
+    btn.addEventListener('click',()=>{ state.members.splice(parseInt(btn.dataset.removemember),1); renderAll(); });
+  });
+  document.querySelectorAll('[data-stage]').forEach(opt=>{
+    opt.addEventListener('click',()=>{ setVal('f5_1', opt.dataset.stage); renderAll(); });
+  });
+  const dc = document.getElementById('declareCheck');
+  if(dc) dc.addEventListener('click',()=>{ state.values.f11_1 = !state.values.f11_1; renderAll(); });
+
+  const prev=document.getElementById('btnPrev');
+  if(prev) prev.addEventListener('click',()=>{
+    const idx = SECTIONS.findIndex(s=>s.id===state.current);
+    if(idx>0){ state.current = SECTIONS[idx-1].id; renderAll(); window.scrollTo({top:0,behavior:'smooth'}); }
+  });
+  const next=document.getElementById('btnNext');
+  if(next) next.addEventListener('click',()=>{
+    if(IS_READONLY || validateSection(section)){
+      const idx = SECTIONS.findIndex(s=>s.id===state.current);
+      if(idx < SECTIONS.length-1){ state.current = SECTIONS[idx+1].id; renderAll(); window.scrollTo({top:0,behavior:'smooth'}); }
+    }
+  });
+  const save=document.getElementById('btnSaveDraft');
+  if(save) save.addEventListener('click',()=>{ saveDraft(); });
+  const submit=document.getElementById('btnSubmit');
+  if(submit) submit.addEventListener('click',()=>{ trySubmit(); });
+  const backToResultBtn=document.getElementById('btnBackToResult');
+  if(backToResultBtn) backToResultBtn.addEventListener('click',()=>{
+    showingThankYou = true;
+    renderAll();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+}
+function findFieldDef(id){
+  for(const s of SECTIONS){ const f=s.fields.find(x=>x.id===id); if(f) return f; }
+  return null;
+}
+
+/* ---------------- التحقق ---------------- */
+function validateSection(section, silent=false){
+  let ok=true;
+  let customMsg = null;
+  visibleFields(section).forEach(f=>{
+    if(!f.required) return;
+    const wrap = silent ? null : document.getElementById('fld_'+f.id);
+    let filled=true;
+    if(f.type==='file') filled=(state.files[f.id]||[]).length>0;
+    else if(f.type==='video'){
+      const mode=state.videoMode[f.id]||'upload';
+      filled = mode==='upload' ? (state.files[f.id]||[]).length>0 : !!getVal(f.id);
+    }
+    else if(f.type==='multiselect') filled = (getVal(f.id)||[]).length>0;
+    else filled = getVal(f.id) && String(getVal(f.id)).trim()!=="";
+    if(!filled){ ok=false; if(wrap) wrap.classList.add('has-error'); }
+    else if(wrap) wrap.classList.remove('has-error');
+
+    // حد أقصى لعدد الحضور المتوقع = عدد أعضاء الفريق فعليًا
+    if(f.id==='f9_2'){
+      const val = parseInt(getVal('f9_2'))||0;
+      if(val > state.members.length){
+        ok=false; customMsg = `عدد الحضور المتوقع (${val}) لا يمكن أن يتجاوز عدد أعضاء الفريق (${state.members.length}).`;
+      }
+    }
+  });
+  if(section.isTeamSection){
+    if(state.members.length<2) ok=false;
+    state.members.forEach(m=>{
+      if(!m.name||!m.phone||!m.email||!m.role||!m.spec||!m.camp) ok=false;
+      if(m.spec==='أخرى' && !(m.specOther||'').trim()) ok=false;
+    });
+    const dupPhones = findDuplicateValues(state.members, 'phone', v=>v.replace(/\s+/g,''));
+    const dupEmails = findDuplicateValues(state.members, 'email', v=>v.toLowerCase());
+    if(dupPhones.size){ ok=false; customMsg = 'لا يمكن تكرار رقم الجوال بين أعضاء الفريق — كل عضو يجب أن يكون له رقم مختلف.'; }
+    if(dupEmails.size){ ok=false; customMsg = 'لا يمكن تكرار البريد الإلكتروني بين أعضاء الفريق — كل عضو يجب أن يكون له بريد مختلف.'; }
+  }
+  if(section.isDeclareSection && !state.values.f11_1) ok=false;
+  if(!ok && !silent) showToast(customMsg || 'يرجى استكمال الحقول الإلزامية المظللة قبل المتابعة');
+  return ok;
+}
+
+/* تفحص كل الأقسام (مو بس القسم الحالي) وترجع أول قسم فيه حقول إلزامية ناقصة —
+   ضرورية قبل الإرسال، لأن المشارك يقدر يقفز مباشرة لقسم الإقرار عبر الشريط
+   الجانبي متجاوزًا أزرار "التالي" اللي تتحقق من القسم الحالي فقط. */
+function findFirstInvalidSection(){
+  for(const sec of SECTIONS){
+    if(!validateSection(sec, true)) return sec;
+  }
+  return null;
+}
+
+/* ---------------- الحفظ والإرسال ---------------- */
+/* تحقق فوري ومباشر من قاعدة البيانات (لا يعتمد على الحالة المحمَّلة سابقًا في
+   المتصفح) — يُستدعى قبل كل عملية حفظ أو إرسال، حتى لو كانت الصفحة مفتوحة من
+   قبل إغلاق النموذج ولم تُحدَّث بعد. */
+async function refuseIfClosed(){
+  try{
+    const { data } = await SB.from('form_settings').select('is_open, deadline_at').eq('id',1).maybeSingle();
+    if(data){
+      FORM_IS_OPEN = data.is_open !== false;
+      FORM_DEADLINE = data.deadline_at ? new Date(data.deadline_at) : null;
+    }
+  }catch(e){ /* لو فشل الاتصال، نعتمد على آخر حالة معروفة بدل ما نمنع الحفظ بالخطأ */ }
+  if(computeClosedState()){
+    showToast(FORM_CLOSED_REASON==='deadline' ? 'انتهى الموعد النهائي — تعذّر الحفظ.' : 'تم إغلاق النموذج من قبل فريق البرنامج — تعذّر الحفظ.');
+    setTimeout(()=>window.location.reload(), 1800);
+    return true;
+  }
+  return false;
+}
+
+async function saveDraft(showToastOnSuccess = true){
+  if(!FORM_ID){ showToast('تعذّر الحفظ: لم يتم تحميل النموذج بعد'); return false; }
+  if(await refuseIfClosed()) return false;
+  if(IS_READONLY){
+    clearTimeout(autosaveTimer); // نوقف أي محاولة حفظ تلقائي معلّقة — يمنع حلقة تكرار الرسالة
+    if(showToastOnSuccess) showToast('تم قفل التعديل على هذا النموذج من قبل فريق البرنامج — تعذّر الحفظ.');
+    const statusEl = document.getElementById('draftStatus');
+    if(statusEl) statusEl.textContent = 'مقفل للتعديل';
+    return false;
+  }
+  syncLeaderFromProjectInfo();
+  document.getElementById('draftStatus').textContent = 'جارٍ الحفظ…';
+  try{
+    // 1) تحديث نسبة الاكتمال وطابع التحديث على verification_forms
+    const { error: vfErr } = await SB_AUTH
+      .from('verification_forms')
+      .update({ completion_pct: overallProgress() })
+      .eq('id', FORM_ID);
+    if(vfErr) throw vfErr;
+
+    // 2) مزامنة كل الإجابات دفعة واحدة (upsert على form_id + field_key)
+    const answerRows = Object.keys(state.values)
+      .filter(k => state.values[k] !== undefined && state.values[k] !== null && state.values[k] !== "")
+      .map(k => {
+        const v = state.values[k];
+        const isArray = Array.isArray(v);
+        return {
+          form_id: FORM_ID,
+          field_key: k,
+          value_text: isArray ? null : String(v),
+          value_json: isArray ? v : null,
+        };
+      });
+    if(answerRows.length){
+      const { error: ansErr } = await SB_AUTH.from('form_answers').upsert(answerRows, { onConflict: 'form_id,field_key' });
+      if(ansErr) throw ansErr;
+    }
+
+    // 3) مزامنة أعضاء الفريق (حذف كامل ثم إعادة إدراج — أبسط استراتيجية مزامنة لعدد صغير من الصفوف)
+    const membersToSave = state.members.filter(m => m.name && m.name.trim());
+    const { error: delErr } = await SB_AUTH.from('team_members').delete().eq('form_id', FORM_ID);
+    if(delErr) throw delErr;
+    if(membersToSave.length){
+      const memberRows = membersToSave.map((m,i) => ({
+        form_id: FORM_ID, full_name: m.name, phone: m.phone, email: m.email,
+        role_in_project: m.role, specialization: (m.spec==='أخرى' ? (m.specOther||'').trim() || 'أخرى' : m.spec),
+        attended_camp: m.camp === "نعم" ? true : (m.camp === "لا" ? false : null),
+        title_in_entity: m.title || null, is_leader: i === 0, order_index: i,
+      }));
+      const { error: memErr } = await SB_AUTH.from('team_members').insert(memberRows);
+      if(memErr) throw memErr;
+    }
+
+    document.getElementById('draftStatus').textContent = 'تم حفظ المسودة — ' + new Date().toLocaleTimeString('ar-SA');
+    if(showToastOnSuccess) showToast('تم حفظ المسودة بنجاح');
+    return true;
+  } catch(e){
+    document.getElementById('draftStatus').textContent = 'تعذّر الحفظ — سيُعاد المحاولة عند تعديلك التالي';
+    showToast('حدث خطأ أثناء الحفظ: ' + (e.message || 'خطأ غير معروف'));
+    return false;
+  }
+}
+
+async function trySubmit(){
+  if(await refuseIfClosed()) return;
+  if(IS_READONLY){
+    showToast('تم قفل التعديل على هذا النموذج من قبل فريق البرنامج — تعذّر الإرسال.');
+    return;
+  }
+
+  const invalidSection = findFirstInvalidSection();
+  if(invalidSection){
+    state.current = invalidSection.id;
+    renderAll();
+    window.scrollTo({top:0,behavior:'smooth'});
+    validateSection(invalidSection); // إعادة تشغيل التحقق (غير صامت) الآن لتظليل الحقول الناقصة بصريًا
+    showToast(`يوجد حقول إلزامية غير مكتملة في قسم "${invalidSection.title}" — أكملها قبل الإرسال.`);
+    return;
+  }
+
+  const saved = await saveDraft(false);
+  if(!saved){ return; }
+
+  try{
+    const { error } = await SB_AUTH
+      .from('verification_forms')
+      .update({ status: 'submitted', submitted_at: new Date().toISOString() })
+      .eq('id', FORM_ID);
+    if(error) throw error;
+    showToast('تم إرسال النموذج بنجاح — سيقوم فريق البرنامج بالمراجعة');
+    showingThankYou = true;
+    renderAll();
+    window.scrollTo({top:0,behavior:'smooth'});
+  } catch(e){
+    showToast('تعذّر إرسال النموذج: ' + (e.message || 'خطأ غير معروف'));
+  }
+}
+
+/* ---------------- تحديثات خفيفة بدون إعادة رسم كاملة ---------------- */
+let autosaveTimer = null;
+function scheduleAutosave(){
+  if(!FORM_ID || IS_READONLY) return;
+  clearTimeout(autosaveTimer);
+  document.getElementById('draftStatus').textContent = 'تعديلات غير محفوظة…';
+  autosaveTimer = setTimeout(()=>{ saveDraft(false); }, 2500);
+}
+function refreshLight(){
+  updateTopbar();
+  renderStepper();
+  scheduleAutosave();
+}
+function updateTopbar(){
+  const pct = (SUBMITTED_COMPLETION_PCT !== null) ? SUBMITTED_COMPLETION_PCT : overallProgress();
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressText').textContent = pct+'% مكتمل';
+  document.getElementById('pillProjectId').textContent = getVal('f1_1') || '—';
+  document.getElementById('subProjectName').textContent = getVal('f1_2') ? ('مشروع: '+getVal('f1_2')) : 'مسار المشاركة والمجال يُحددان تلقائيًا من بيانات المنصة';
+}
+
+function renderThankYouScreen(){
+  const card = document.getElementById('sectionCard');
+  const closed = computeClosedState();
+  const canEdit = ALLOW_EDIT_AFTER_SUBMIT && !closed && !IS_READONLY;
+
+  const genericMessage = `<div style="font-size:14px;color:var(--ink-600);max-width:480px;margin:0 auto 26px;line-height:1.9">
+    شكرًا لإكمال نموذج التحقق من استيفاء متطلبات الانتقال إلى مرحلة التحكيم. سيقوم فريق البرنامج بمراجعة طلبكم، وسيتم التواصل معكم في حال الحاجة لأي استكمال.
+  </div>`;
+
+  const qualifiedDetails = `<div style="max-width:480px;margin:0 auto 22px;padding:20px 22px;border-radius:12px;background:var(--paper);border:1px solid var(--line);text-align:right">
+    <div style="font-size:13.5px;color:var(--ink-900);line-height:2">عزيزي المشارك في حاضنة ابتكار 5،</div>
+    <div style="font-size:13.5px;color:var(--ink-900);line-height:2;margin-top:8px">السلام عليكم ورحمة الله وبركاته،</div>
+    <div style="font-size:13.5px;color:var(--ink-900);line-height:2;margin-top:8px">يسرنا تهنئتكم بتأهُّل مشروعكم إلى المرحلة الثالثة: تقييم وتحكيم المشاريع ضمن حاضنة ابتكار في نسختها الخامسة، ونثمِّن لكم حرصكم وجهودكم خلال مراحل البرنامج.</div>
+
+    <div style="font-weight:800;color:var(--navy-800);font-family:'Cairo',sans-serif;font-size:13.5px;margin-top:16px;margin-bottom:10px">تفاصيل المرحلة الثالثة:</div>
+    <div style="font-size:13px;color:var(--ink-900);line-height:2.1">
+      📅 <b>التاريخ:</b> الثلاثاء 29 سبتمبر 2026م<br>
+      🕘 <b>الوقت:</b> من الساعة 9:00 صباحًا إلى الساعة 5:00 مساءً<br>
+      📍 <b>الموقع:</b> المركز الرئيسي لريادة الأعمال الرقمية – مدينة الرياض
+    </div>
+
+    <div style="font-size:13.5px;color:var(--ink-900);line-height:2;margin-top:14px">سيتم تزويدكم لاحقًا بكافة التفاصيل والتعليمات المتعلقة بآلية التحكيم، ومتطلبات المشاركة، وجدول عرض المشاريع.</div>
+    <div style="font-size:13.5px;color:var(--ink-900);line-height:2;margin-top:14px">مع خالص التقدير،<br>فريق حاضنة ابتكار</div>
+  </div>`;
+
+  // رسالة مستقلة تمامًا عن خطاب التأهل أعلاه — تظهر فقط لو تحدَّد إسناد
+  // اللجنة/الفترة فعليًا، أو لو معايير التحكيم منشورة
+  const judgingSessionDetails = (ASSIGNED_COMMITTEE_NAME || ASSIGNED_PERIOD || JUDGING_CRITERIA_LIST.length) ? `
+  <div style="max-width:480px;margin:0 auto 22px;padding:20px 22px;border-radius:12px;background:#fff;border:1px solid var(--line);text-align:right">
+    <div style="font-weight:800;color:var(--navy-800);font-family:'Cairo',sans-serif;font-size:14px;margin-bottom:12px">${icon('users',{size:14})} تفاصيل جلسة تحكيمكم</div>
+
+    <div style="background:var(--paper);border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:12.5px;color:var(--navy-800);margin-bottom:10px">هل ستحضرون جلسة التحكيم؟</div>
+      <div style="display:flex;gap:8px">
+        <button type="button" id="btnAttendYes" style="flex:1;padding:10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:2px solid ${ATTENDANCE_CONFIRMED===true?'var(--success)':'var(--line)'};background:${ATTENDANCE_CONFIRMED===true?'var(--success)':'#fff'};color:${ATTENDANCE_CONFIRMED===true?'#fff':'var(--ink-900)'}">✓ نعم سنحضر</button>
+        <button type="button" id="btnAttendNo" style="flex:1;padding:10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:2px solid ${ATTENDANCE_CONFIRMED===false?'var(--danger)':'var(--line)'};background:${ATTENDANCE_CONFIRMED===false?'var(--danger)':'#fff'};color:${ATTENDANCE_CONFIRMED===false?'#fff':'var(--ink-900)'}">✗ لن نحضر</button>
+      </div>
+      ${ATTENDANCE_CONFIRMED===null ? `<div style="font-size:11px;color:var(--ink-400);margin-top:8px">لم تردّوا بعد${ATTENDANCE_CONFIRM_DEADLINE?` — يُفضَّل التأكيد قبل ${new Date(ATTENDANCE_CONFIRM_DEADLINE).toLocaleDateString('ar-SA')}`:''}</div>` : ''}
+      ${ATTENDANCE_CONFIRMED===false ? `<div style="font-size:11px;color:var(--ink-400);margin-top:8px">مسجَّلون حاليًا كـ"لن نحضر" — تقدرون تغيّرون قراركم بأي وقت بالضغط على الزر</div>` : ''}
+    </div>
+
+    ${(ASSIGNED_COMMITTEE_NAME || ASSIGNED_PERIOD) ? `<div style="font-size:13px;color:var(--ink-900);line-height:2.1;margin-bottom:${JUDGING_CRITERIA_LIST.length?'16px':'0'}">
+      👥 <b>لجنتكم:</b> ${ASSIGNED_COMMITTEE_NAME ? escHtml(ASSIGNED_COMMITTEE_NAME) : 'سيتم تحديدها لاحقًا'}<br>
+      ⏱️ <b>فترتكم المحدَّدة:</b> ${ASSIGNED_PERIOD ? `${escHtml(ASSIGNED_PERIOD.name)}${ASSIGNED_PERIOD.start_time?` (${escHtml(ASSIGNED_PERIOD.start_time)}${ASSIGNED_PERIOD.end_time?'–'+escHtml(ASSIGNED_PERIOD.end_time):''})`:''}` : 'سيتم تحديدها لاحقًا'}<br>
+      📍 <b>الموقع:</b> <a href="https://maps.app.goo.gl/Q3aDCPcbd331CB2E8?g_st=awb" target="_blank" rel="noopener" style="color:var(--teal-600);text-decoration:underline">مركز ريادة الأعمال الرقمية</a>
+    </div>` : ''}
+    ${JUDGING_CRITERIA_LIST.length ? `
+    <div style="font-weight:700;color:var(--navy-800);font-size:12.5px;margin-bottom:8px">معايير التحكيم</div>
+    <div style="font-size:12.5px;color:var(--ink-900);line-height:1.9">
+      ${JUDGING_CRITERIA_LIST.map(c=>`<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line)">
+        <div><b>${escHtml(c.label)}</b> <span style="color:var(--ink-400)">(الوزن: ${c.max_score})</span></div>
+        ${c.description ? `<div style="color:var(--ink-600);margin-top:2px">${escHtml(c.description)}</div>` : ''}
+      </div>`).join('')}
+    </div>` : ''}
+    ${ASSIGNED_COMMITTEE_NAME ? `
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
+      <div style="font-weight:700;color:var(--navy-800);font-size:12.5px;margin-bottom:8px">${icon('file-text',{size:13})} ملف العرض التقديمي للتحكيم</div>
+      ${(PRESENTATION_DEADLINE_AT && !PRESENTATION_DEADLINE_PASSED) ? `<div style="font-size:11.5px;color:var(--amber,#B8860B);margin-bottom:10px">⏰ آخر موعد للرفع أو الاستبدال: ${new Date(PRESENTATION_DEADLINE_AT).toLocaleDateString('ar-SA')} — ${new Date(PRESENTATION_DEADLINE_AT).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+      ${JUDGING_PRESENTATION ? `
+      <div class="file-chip" style="margin-bottom:8px"><span class="fc-name">${icon('file-text',{size:13})} ${escHtml(JUDGING_PRESENTATION.file_name)}</span>${PRESENTATION_DEADLINE_PASSED ? '' : `<button type="button" class="fc-remove" id="btnReplacePresentation">استبدال</button>`}</div>
+      <div style="font-size:11px;color:var(--ink-400)">تم الرفع بتاريخ ${new Date(JUDGING_PRESENTATION.uploaded_at).toLocaleDateString('ar-SA')}${PRESENTATION_DEADLINE_PASSED ? ' — انتهى موعد الاستبدال' : ''}</div>
+      ` : PRESENTATION_DEADLINE_PASSED ? `
+      <div class="req-banner" style="background:var(--danger-100);color:var(--danger)">انتهى الموعد النهائي لرفع ملف العرض التقديمي (${PRESENTATION_DEADLINE_AT ? new Date(PRESENTATION_DEADLINE_AT).toLocaleDateString('ar-SA') : ''})، ولم يُرفع أي ملف بعد. تواصلوا مع فريق البرنامج إذا احتجتم استثناءً.</div>
+      ` : `
+      <div class="file-drop" id="presentationDropZone">
+        <div class="fi-title">اضغطوا لرفع ملف العرض التقديمي (PDF)</div>
+        <div class="fi-sub">الحد الأقصى ${MAX_PDF_MB} م.ب</div>
+      </div>
+      `}
+      ${PRESENTATION_DEADLINE_PASSED ? '' : `<input type="file" id="presentationFileInput" accept=".pdf" style="display:none">`}
+    </div>` : ''}
+  </div>` : '';
+
+  const notQualifiedMessage = `<div style="font-size:13.5px;color:var(--ink-900);max-width:480px;margin:0 auto 22px;line-height:2;text-align:right;padding:20px 22px;border-radius:12px;background:var(--paper);border:1px solid var(--line)">
+    <div>عزيزي المشارك في حاضنة ابتكار في نسختها الخامسة،</div>
+    <div style="margin-top:8px">نشكر لكم مشاركتكم وحرصكم وجهودكم خلال مراحل حاضنة ابتكار في نسختها الخامسة، ونقدِّر ما تم تقديمه من أفكار ومشاريع مميزة. ونفيدكم بأن مشروعكم لم يتأهَّل إلى المرحلة الثالثة: تقييم وتحكيم المشاريع، والتي تخضع لاشتراطات ومعايير ومتطلبات محدَّدة للانتقال إليها.</div>
+    <div style="margin-top:12px">ونؤكد لكم حرصنا على دعم جميع المشاركين، ومتابعة تطوير مشاريعهم والاستفادة من مخرجات البرنامج، ونأمل أن تمثِّل هذه التجربة خطوة جديدة في مسيرتكم الابتكارية.</div>
+    <div style="margin-top:14px">مع خالص الشكر والتقدير،<br>فريق حاضنة ابتكار</div>
+  </div>`;
+
+  card.innerHTML = `
+    <div style="text-align:center;padding:56px 20px 24px">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--success-100);color:var(--success);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">${icon('check',{size:30,strokeWidth:2.5})}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--navy-800);font-family:'Cairo',sans-serif;margin-bottom:10px">تم إرسال النموذج بنجاح</div>
+      ${QUALIFICATION_BADGE ? '' : genericMessage}
+      ${QUALIFICATION_BADGE ? `
+      <div style="max-width:420px;margin:0 auto 22px;padding:14px 18px;border-radius:12px;background:${QUALIFICATION_BADGE==='ok'?'var(--success-100)':'var(--danger-100)'};color:${QUALIFICATION_BADGE==='ok'?'var(--success)':'var(--danger)'};text-align:center">
+        <div style="font-size:14px;font-weight:800;font-family:'Cairo',sans-serif">${QUALIFICATION_BADGE==='ok'?'مشروعكم متأهِّل للانتقال إلى مرحلة التحكيم':'مشروعكم غير متأهِّل حاليًا للانتقال إلى مرحلة التحكيم'}</div>
+      </div>
+      ${QUALIFICATION_BADGE==='ok' ? qualifiedDetails + judgingSessionDetails : notQualifiedMessage}` : ''}
+      ${PUBLISHED_REPORT ? `<div style="margin-bottom:22px"><button class="btn btn-primary" id="btnGoToReport">${icon('file-text',{size:14})} عرض تقرير مشروعكم</button></div>` : ''}
+      ${canEdit
+        ? `<button class="btn btn-primary" id="btnEditAfterSubmit">تعديل الإجابات</button>`
+        : `<div style="max-width:420px;margin:0 auto">
+            <div style="font-size:12.5px;color:var(--ink-400);line-height:1.9;margin-bottom:14px">${IS_READONLY?'🔒 انتهت نافذة التعديل على هذا النموذج — يمكنكم الاطلاع على بياناتكم المُرسَلة، دون إمكانية تعديلها حاليًا.':closed?'تم إغلاق النموذج، ولا يمكن تعديل الإجابات حاليًا — يمكنكم الاطلاع على بياناتكم المُرسَلة.':'تعديل الإجابات بعد الإرسال غير متاح حاليًا — يُرجى التواصل مع فريق البرنامج في حال الحاجة لتحديث بياناتكم.'}</div>
+            <button class="btn btn-primary" id="btnViewSubmittedData">${icon('eye',{size:14})} عرض بياناتكم المُرسَلة</button>
+          </div>`}
+    </div>
+  `;
+  const editBtn = document.getElementById('btnEditAfterSubmit');
+  if(editBtn) editBtn.addEventListener('click', ()=>{
+    SUBMITTED_COMPLETION_PCT = null; // رجوع للحساب الحي — المشارك بصدد تعديل فعلي الآن
+    showingThankYou = false;
+    renderAll();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  const viewDataBtn = document.getElementById('btnViewSubmittedData');
+  if(viewDataBtn) viewDataBtn.addEventListener('click', ()=>{
+    showingThankYou = false;
+    renderAll();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  const goReportBtn = document.getElementById('btnGoToReport');
+  if(goReportBtn) goReportBtn.addEventListener('click', ()=>{
+    showingReport = true;
+    renderAll();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  const presInput = document.getElementById('presentationFileInput');
+  const presDropZone = document.getElementById('presentationDropZone');
+  const presReplaceBtn = document.getElementById('btnReplacePresentation');
+  if(presDropZone) presDropZone.addEventListener('click', ()=>presInput.click());
+  if(presReplaceBtn) presReplaceBtn.addEventListener('click', ()=>presInput.click());
+  if(presInput) presInput.addEventListener('change', async e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    if(PRESENTATION_DEADLINE_PASSED){ showToast('انتهى الموعد النهائي لرفع ملف العرض التقديمي'); presInput.value=''; return; }
+    if(!/\.pdf$/i.test(file.name) && file.type!=='application/pdf'){ showToast('يُقبل PDF فقط'); presInput.value=''; return; }
+    if(file.size > MAX_PDF_MB*1024*1024){ showToast(`تجاوز الحجم المسموح به (الحد الأقصى ${MAX_PDF_MB} م.ب)`); presInput.value=''; return; }
+    showToast('جارٍ رفع العرض التقديمي…');
+    try{
+      const ext = (file.name.split('.').pop() || 'pdf').replace(/[^a-zA-Z0-9]/g,'').toLowerCase() || 'pdf';
+      const safeName = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const storagePath = `${PROJECT_ID}/judging-presentation/${safeName}`;
+      const { error: upErr } = await SB_AUTH.storage.from('form-attachments').upload(storagePath, file, { upsert: false });
+      if(upErr) throw upErr;
+      // نحذف الملف القديم من التخزين (إن وُجد) بعد نجاح رفع الجديد
+      if(JUDGING_PRESENTATION && JUDGING_PRESENTATION.storage_path){
+        await SB_AUTH.storage.from('form-attachments').remove([JUDGING_PRESENTATION.storage_path]);
+      }
+      const { error: dbErr } = await SB_AUTH.from('judging_presentations').upsert({
+        form_id: FORM_ID, file_name: file.name, storage_path: storagePath, file_size: file.size, uploaded_at: new Date().toISOString(),
+      }, { onConflict: 'form_id' });
+      if(dbErr) throw dbErr;
+      JUDGING_PRESENTATION = { file_name: file.name, storage_path: storagePath, uploaded_at: new Date().toISOString() };
+      showToast('تم رفع العرض التقديمي بنجاح');
+      renderAll();
+    } catch(err){
+      console.error(err);
+      showToast('تعذّر رفع العرض التقديمي: ' + (err.message||'خطأ غير معروف'));
+    }
+  });
+
+  const attendYesBtn = document.getElementById('btnAttendYes');
+  const attendNoBtn = document.getElementById('btnAttendNo');
+  const submitAttendance = async (confirmed)=>{
+    try{
+      const { error } = await SB_AUTH.rpc('participant_confirm_attendance', { p_form_id: FORM_ID, p_confirmed: confirmed });
+      if(error) throw error;
+      ATTENDANCE_CONFIRMED = confirmed;
+      showToast(confirmed ? 'تم تأكيد حضوركم' : 'تم تسجيل اعتذاركم');
+      renderAll();
+    } catch(err){
+      console.error(err);
+      showToast('تعذّر تسجيل ردّكم: ' + (err.message||'خطأ غير معروف'));
+    }
+  };
+  if(attendYesBtn) attendYesBtn.addEventListener('click', ()=>submitAttendance(true));
+  if(attendNoBtn) attendNoBtn.addEventListener('click', ()=>submitAttendance(false));
+}
+
+/* ---------------- شاشة التقرير المستقلة — تدمج نتيجة الاستيفاء داخل التقرير نفسه ---------------- */
+function renderReportScreen(){
+  const card = document.getElementById('sectionCard');
+  const rep = PUBLISHED_REPORT ? PUBLISHED_REPORT.report : null;
+  if(!rep){ showingReport = false; renderThankYouScreen(); return; }
+  const qualRow = QUALIFICATION_BADGE ? `
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:12px 14px;border-radius:10px;background:${QUALIFICATION_BADGE==='ok'?'rgba(255,255,255,.15)':'rgba(255,255,255,.12)'}">
+      <span style="font-size:17px;line-height:1.3">${QUALIFICATION_BADGE==='ok'?'✓':'✗'}</span>
+      <div>
+        <div style="font-size:13.5px;font-weight:800;color:#fff;font-family:'Cairo',sans-serif">${QUALIFICATION_BADGE==='ok'?'مشروعكم متأهِّل للانتقال إلى مرحلة التحكيم':'مشروعكم غير متأهِّل حاليًا للانتقال إلى مرحلة التحكيم'}</div>
+      </div>
+    </div>` : '';
+  card.innerHTML = `
+    <div style="padding:20px 20px 8px">
+      <button class="btn btn-ghost btn-sm" id="btnBackFromReport">${icon('arrow-right',{size:13})} رجوع</button>
+    </div>
+    <div style="padding:8px 20px 28px">
+      <div style="display:flex;justify-content:flex-end;max-width:640px;margin:0 auto 12px">
+        <button class="btn btn-ghost btn-sm" id="printReportBtn">${icon('download',{size:12})} تنزيل PDF</button>
+      </div>
+      <div id="participantReportPrintable" style="max-width:640px;margin:0 auto;text-align:right;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff">
+        <div style="background:linear-gradient(135deg,var(--navy-800),#1a2456);padding:22px 24px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:${qualRow?'16px':'0'}">
+            <div>
+              <div style="font-size:11px;color:var(--gold-300,#E6C570);letter-spacing:.5px;font-family:'Cairo',sans-serif">حاضنة ابتكار 5 — تقرير تطوير مشروعكم</div>
+              <div style="font-size:17px;font-weight:800;color:#fff;font-family:'Cairo',sans-serif;margin-top:4px">${escHtml(PROJECT_NAME||'')}</div>
+            </div>
+            <div id="reportLogoSlot" style="flex-shrink:0;width:64px"></div>
+          </div>
+          ${qualRow}
+        </div>
+        <div style="padding:24px">
+          <div style="display:inline-block;padding:6px 14px;border-radius:20px;background:var(--gold-100,#FBF0DA);color:var(--navy-800);font-weight:700;font-size:13px;margin-bottom:14px">${escHtml(rep.qualitative_level)}</div>
+          <p style="font-size:13.5px;line-height:1.9;color:var(--ink-900);margin-bottom:20px">${escHtml(rep.overall_message)}</p>
+
+          ${rep.motivational_closing ? `<div style="background:var(--teal-100);border-radius:10px;padding:14px 16px">
+            <div style="font-size:13px;color:var(--teal-700,#0E5C5B);line-height:1.9">${icon('sparkles',{size:13})}&nbsp;${escHtml(rep.motivational_closing)}</div>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+  const logoSlot = document.getElementById('reportLogoSlot');
+  const sourceLogo = document.querySelector('.brand-logo-svg');
+  if(logoSlot && sourceLogo){ const clone = sourceLogo.cloneNode(true); clone.style.width = '100%'; clone.style.height = 'auto'; clone.removeAttribute('class'); logoSlot.appendChild(clone); }
+  const backBtn = document.getElementById('btnBackFromReport');
+  if(backBtn) backBtn.addEventListener('click', ()=>{
+    showingReport = false;
+    renderAll();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  const printBtn = document.getElementById('printReportBtn');
+  if(printBtn) printBtn.addEventListener('click', ()=>window.print());
+}
+
+/* ---------------- شاشة إغلاق النموذج (يدوي أو بعد الموعد النهائي) ---------------- */
+function renderClosedScreen(){
+  document.getElementById('sectionCard').innerHTML = `
+    <div style="text-align:center;padding:56px 20px">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--danger-100);color:var(--danger);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">${icon('lock',{size:28})}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--navy-800);font-family:'Cairo',sans-serif;margin-bottom:10px">النموذج مغلق حاليًا</div>
+      <div style="font-size:14px;color:var(--ink-600);max-width:480px;margin:0 auto 10px;line-height:1.9">
+        ${FORM_CLOSED_REASON==='deadline'
+          ? `انتهى الموعد النهائي لاستقبال الطلبات${FORM_DEADLINE?(' بتاريخ '+FORM_DEADLINE.toLocaleDateString('ar-SA')+' الساعة '+FORM_DEADLINE.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})):''}.`
+          : 'تم إغلاق النموذج مؤقتًا من قبل فريق البرنامج.'}
+      </div>
+      <div style="font-size:13px;color:var(--ink-400);margin-top:18px">لأي استفسار، تواصل مع فريق البرنامج على <span class="mono">icip@qu.edu.sa</span></div>
+    </div>
+  `;
+  updateTopbar();
+  document.getElementById('stepper').innerHTML = '';
+}
+
+/* ---------------- عد تنازلي حي حتى الموعد النهائي ---------------- */
+function fmtCountdown(ms){
+  if(ms<=0) return null;
+  const totalMin = Math.floor(ms/60000);
+  const days = Math.floor(totalMin/1440);
+  const hours = Math.floor((totalMin%1440)/60);
+  const mins = totalMin%60;
+  if(days>0) return `${days} يوم ${hours} ساعة`;
+  if(hours>0) return `${hours} ساعة ${mins} د`;
+  return `${mins} دقيقة`;
+}
+function startCountdown(){
+  const el = document.getElementById('deadlineCountdown');
+  if(!el || !FORM_DEADLINE) return;
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  el.style.gap = '5px';
+  clearInterval(countdownTimer);
+  const tick = ()=>{
+    const remaining = FORM_DEADLINE - new Date();
+    const label = fmtCountdown(remaining);
+    if(!label){
+      clearInterval(countdownTimer);
+      window.location.reload(); // الموعد وصل فعليًا — أعد التحميل ليطبَّق القفل فورًا
+      return;
+    }
+    el.innerHTML = `${icon('hourglass',{size:11})} يُغلق خلال ${label}`;
+  };
+  tick();
+  countdownTimer = setInterval(tick, 30000);
+}
+/* فحص دوري: لو الإداري أغلق النموذج يدويًا أثناء وجود المشارك بالصفحة */
+function startCloseWatcher(){
+  clearInterval(closeWatchTimer);
+  closeWatchTimer = setInterval(async ()=>{
+    try{
+      const { data } = await SB.from('form_settings').select('is_open').eq('id',1).maybeSingle();
+      if(data && data.is_open === false && FORM_STATUS !== 'submitted'){
+        window.location.reload();
+      }
+    }catch(e){}
+  }, 120000); // كل دقيقتين
+}
+
+function renderAnnouncementsBanner(){
+  const el = document.getElementById('announcementsBanner');
+  if(!el) return;
+  const reportBanner = PUBLISHED_REPORT ? `<div class="ann-banner" id="reportBannerLink" style="cursor:pointer;background:var(--navy-800);color:#fff">${icon('file-text',{size:14})}<span>تقرير مشروعكم جاهز للاطلاع عليه</span></div>` : '';
+  const regularBanners = ACTIVE_ANNOUNCEMENTS.map(a=>`<div class="ann-banner">${icon('megaphone',{size:14})}<span>${escHtml(a.message)}</span></div>`).join('');
+  el.innerHTML = reportBanner + regularBanners;
+  const bannerLink = document.getElementById('reportBannerLink');
+  if(bannerLink) bannerLink.addEventListener('click', ()=>{ showingReport = true; renderAll(); window.scrollTo({top:0,behavior:'smooth'}); });
+}
+
+function renderAll(){
+  renderStepper();
+  renderAnnouncementsBanner();
+  if(showingReport){ renderReportScreen(); updateTopbar(); return; }
+  if(showingThankYou){ renderThankYouScreen(); updateTopbar(); return; }
+  renderSection();
+  updateTopbar();
+  scheduleAutosave();
+}
+
+/* ---------------- تحميل النموذج من Supabase عند بدء التشغيل ---------------- */
+async function initApp(){
+  const session = requireSessionOrRedirect();
+  if(!session) return; // requireSessionOrRedirect يحوّل المستخدم لصفحة الدخول
+
+  PROJECT_ID = session.project_id;
+  SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  SB_AUTH = SB; // عميل واحد يكفي الآن — الوصول محكوم بـ RLS على "مشروع نشط" فقط
+
+  try{
+    // 0) تعريف النموذج نفسه (الأقسام والأسئلة) — لازم يُحمَّل قبل أي شيء آخر
+    await loadFormDefinition();
+
+    // 1) بيانات المشروع الأساسية
+    const { data: proj } = await SB.from('eligible_projects')
+      .select('project_id, project_name, team_leader_name, team_leader_phone, team_leader_email, track, domain, is_active, edit_locked')
+      .eq('project_id', PROJECT_ID).maybeSingle();
+    IS_READONLY = !!proj && (proj.is_active === false || proj.edit_locked === true);
+    PROJECT_NAME = proj ? (proj.project_name || '') : '';
+
+    // 2) جلب سجل النموذج أو إنشاؤه لأول مرة
+    let { data: form, error: formErr } = await SB_AUTH.from('verification_forms')
+      .select('id, status, completion_pct').eq('project_id', PROJECT_ID).maybeSingle();
+    if(formErr) throw formErr;
+    if(!form){
+      const { data: created, error: createErr } = await SB_AUTH.from('verification_forms')
+        .insert({ project_id: PROJECT_ID, status: 'draft' }).select().single();
+      if(createErr) throw createErr;
+      form = created;
+    }
+    FORM_ID = form.id;
+    if(form.status === 'submitted') SUBMITTED_COMPLETION_PCT = form.completion_pct;
+
+    // 3) الإجابات المحفوظة سابقًا
+    const { data: answers } = await SB_AUTH.from('form_answers').select('field_key, value_text, value_json').eq('form_id', FORM_ID);
+    (answers||[]).forEach(a=>{ state.values[a.field_key] = a.value_json !== null ? a.value_json : a.value_text; });
+
+    // 4) أعضاء الفريق
+    const { data: members } = await SB_AUTH.from('team_members').select('*').eq('form_id', FORM_ID).order('order_index');
+    if(members && members.length){
+      state.members = members.map(m=>({
+        name:m.full_name||"", phone:m.phone||"", email:m.email||"",
+        role:m.role_in_project||"",
+        spec: SPECIALIZATIONS.includes(m.specialization) ? m.specialization : (m.specialization ? "أخرى" : ""),
+        specOther: SPECIALIZATIONS.includes(m.specialization) ? "" : (m.specialization||""),
+        camp: m.attended_camp===true?"نعم":(m.attended_camp===false?"لا":""),
+        title: m.title_in_entity||"",
+      }));
+    }
+
+    // 5) الملفات المرفوعة سابقًا (غير المحذوفة)
+    const { data: files } = await SB_AUTH.from('form_files').select('*').eq('form_id', FORM_ID).is('deleted_at', null);
+    (files||[]).forEach(f=>{
+      if(!state.files[f.field_key]) state.files[f.field_key] = [];
+      state.files[f.field_key].push({ name:f.file_name, size:f.size_bytes, id:f.id, storage_path:f.storage_path });
+    });
+
+    // 6) تعبئة بيانات المشروع الأساسية — eligible_projects هو المصدر الرسمي
+    // لهذه الحقول (لذلك تُقفَل في الواجهة)، فتُعتمد قيمته دائمًا عند توفرها.
+    setVal('f1_1', PROJECT_ID);
+    if(proj){
+      if(proj.team_leader_name) setVal('f1_5', proj.team_leader_name);
+      if(proj.track) setVal('f1_3', proj.track);
+      if(proj.domain) setVal('f1_4', proj.domain);
+      if(proj.team_leader_phone) setVal('f1_7', proj.team_leader_phone);
+      if(proj.team_leader_email) setVal('f1_8', proj.team_leader_email);
+    }
+
+    // 7) إعدادات النموذج — هل يُسمح بالتعديل بعد الإرسال؟ وهل النموذج مفتوح؟ وحدود الملفات؟
+    const { data: settings } = await SB.from('form_settings')
+      .select('allow_edit_after_submit, is_open, deadline_at, max_pdf_mb, max_video_mb, max_video_minutes, max_files_per_field')
+      .eq('id',1).maybeSingle();
+    if(settings){
+      if(settings.allow_edit_after_submit === false) ALLOW_EDIT_AFTER_SUBMIT = false;
+      FORM_IS_OPEN = settings.is_open !== false;
+      FORM_DEADLINE = settings.deadline_at ? new Date(settings.deadline_at) : null;
+      if(settings.max_pdf_mb) MAX_PDF_MB = settings.max_pdf_mb;
+      if(settings.max_video_mb) MAX_VIDEO_MB = settings.max_video_mb;
+      if(settings.max_video_minutes) MAX_VIDEO_MINUTES = settings.max_video_minutes;
+      if(settings.max_files_per_field) MAX_FILES_PER_FIELD = settings.max_files_per_field;
+    }
+
+    // 7.1) الإعلانات المفعَّلة حاليًا
+    const { data: anns } = await SB.from('announcements').select('id, message, created_at').eq('is_active', true).order('created_at', {ascending:false});
+    ACTIVE_ANNOUNCEMENTS = anns || [];
+
+    // 7.2) تقرير المشارك المنشور (إن وُجد) — تحفيزي وتطويري، منفصل عن أي تقييم داخلي
+    const { data: pubReport } = await SB.from('participant_reports').select('report, published_at').eq('form_id', FORM_ID).eq('is_published', true).order('generated_at',{ascending:false}).limit(1).maybeSingle();
+    PUBLISHED_REPORT = pubReport || null;
+
+    // حالة الاستيفاء مستقلة عن التقرير — تُحسَب وتُعرَض فورًا لو نُشرت صراحة
+    // (حتى قبل جاهزية التقرير الكامل)، أو تلقائيًا لو التقرير نُشر أصلًا
+    let qualificationPublished = false;
+    try{
+      const { data: settingsRow } = await SB.from('form_settings').select('qualification_status_published, judging_info_published').eq('id', 1).maybeSingle();
+      qualificationPublished = !!(settingsRow && settingsRow.qualification_status_published);
+      var judgingInfoPublished = !!(settingsRow && settingsRow.judging_info_published);
+    } catch(e){ console.error('تعذّر جلب إعداد نشر الاستيفاء:', e); }
+
+    if((qualificationPublished || PUBLISHED_REPORT) && form.status === 'submitted'){
+      try{
+        const { data: allHumanReqs } = await SB_AUTH.from('requirement_status').select('requirement, status').eq('form_id', FORM_ID);
+        const humanReqMap = {}; (allHumanReqs||[]).forEach(r=>{ humanReqMap[r.requirement] = r.status; });
+        const hasCommercial = humanReqMap['commercial_registration'] ? humanReqMap['commercial_registration'] === 'ok' : state.values['f2_1'] === 'نعم';
+        let ipKey = null;
+        for(const sec of SECTIONS){
+          for(const q of sec.fields){
+            if((q.label||'').includes('حماية للملكية الفكرية') || (q.label||'').includes('شراكة مع جهات حكومية')){ ipKey = q.id; break; }
+          }
+          if(ipKey) break;
+        }
+        const hasIp = ipKey ? state.values[ipKey] === 'نعم' : false;
+
+        if(hasCommercial || hasIp){
+          QUALIFICATION_BADGE = 'ok';
+        } else {
+          // "مرشّح للتأهل": حقّق بقية المتطلبات الخمسة كاملة رغم عدم وجود
+          // سجل تجاري أو بديله — يُعامَل معاملة "متأهل" تمامًا بصفحة المشارك،
+          // نفس منطق لوحة التحكم بالضبط
+          const [{ data: members }, { data: files }] = await Promise.all([
+            SB_AUTH.from('team_members').select('id').eq('form_id', FORM_ID),
+            SB_AUTH.from('form_files').select('field_key').eq('form_id', FORM_ID).is('deleted_at', null),
+          ]);
+          const memberCount = (members||[]).length;
+          const fileKeys = (files||[]).map(f=>f.field_key);
+          const suggestOther = (key)=>{
+            if(key==='camp_attendance') return state.values['f3_2']==='نعم' ? 'ok' : (state.values['f3_2']==='لا' ? 'no' : null);
+            if(key==='team_size') return memberCount ? (memberCount>=2 ? 'ok' : 'no') : null;
+            if(key==='prototype'){ const s=state.values['f5_1']; return s ? (['poc','prototype','mvp','market'].includes(s)?'ok':'no') : null; }
+            if(key==='pitch_deck'){ const s=state.values['f6_1']; const hasFile=fileKeys.includes('f6_2'); if(!s) return null; return (s==='غير مكتمل'||s==='لم يبدأ'||!hasFile) ? 'no' : 'ok'; }
+            if(key==='market_validation'){ const s=state.values['f7_1']; if(s==='تحقق مكتمل') return 'ok'; if(s==='تحقق جزئي'||s==='تحقق جارٍ') return 'mid'; if(s==='لم يبدأ التحقق') return 'no'; return null; }
+            return null;
+          };
+          const otherReqKeys = ['camp_attendance','team_size','prototype','pitch_deck','market_validation'];
+          const candidateWithoutReg = otherReqKeys.every(k=>{
+            const effective = humanReqMap[k] ? humanReqMap[k] : suggestOther(k);
+            return effective === 'ok';
+          });
+          QUALIFICATION_BADGE = candidateWithoutReg ? 'ok' : 'none';
+        }
+      } catch(e){ console.error('تعذّر حساب حالة الاستيفاء:', e); }
+
+      // لو المشروع متأهل، نجلب إسناد اللجنة/الفترة (إن وُجد) ومعايير
+      // التحكيم — تُعرَض بالخطاب الموجَّه للفرق المتأهلة
+      if(QUALIFICATION_BADGE === 'ok' && judgingInfoPublished){
+        try{
+          const { data: activeRound } = await SB.from('judging_rounds').select('id').eq('is_active', true).maybeSingle();
+          if(activeRound){
+            const { data: assignment } = await SB.from('committee_assignments').select('committee_id, period_id, attendance_confirmed').eq('form_id', FORM_ID).eq('round_id', activeRound.id).maybeSingle();
+            if(assignment){
+              const [{data: committee}, {data: period}] = await Promise.all([
+                assignment.committee_id ? SB.from('judging_committees').select('name').eq('id', assignment.committee_id).maybeSingle() : Promise.resolve({data:null}),
+                assignment.period_id ? SB.from('judging_periods').select('name, start_time, end_time').eq('id', assignment.period_id).maybeSingle() : Promise.resolve({data:null}),
+              ]);
+              ASSIGNED_COMMITTEE_NAME = committee ? committee.name : null;
+              ASSIGNED_PERIOD = period || null;
+              ATTENDANCE_CONFIRMED = assignment.attendance_confirmed;
+              const { data: pres } = await SB.from('judging_presentations').select('file_name, storage_path, uploaded_at').eq('form_id', FORM_ID).maybeSingle();
+              JUDGING_PRESENTATION = pres || null;
+              const { data: presSettings } = await SB.from('form_settings').select('presentation_deadline_at, attendance_confirm_deadline_at').eq('id', 1).maybeSingle();
+              if(presSettings && presSettings.presentation_deadline_at){
+                PRESENTATION_DEADLINE_AT = presSettings.presentation_deadline_at;
+                PRESENTATION_DEADLINE_PASSED = new Date() > new Date(presSettings.presentation_deadline_at);
+              }
+              if(presSettings && presSettings.attendance_confirm_deadline_at){
+                ATTENDANCE_CONFIRM_DEADLINE = presSettings.attendance_confirm_deadline_at;
+              }
+            }
+            const { data: criteria } = await SB.from('judging_criteria').select('label, description, max_score').eq('round_id', activeRound.id).eq('is_active', true).order('order_index');
+            JUDGING_CRITERIA_LIST = criteria || [];
+          }
+        } catch(e){ console.error('تعذّر جلب بيانات اللجنة/الفترة/المعايير:', e); }
+      }
+    }
+
+    if(form.status === 'submitted'){
+      showingThankYou = true;
+    }
+    FORM_STATUS = form.status;
+  } catch(e){
+    showToast('تعذّر تحميل بيانات النموذج: ' + (e.message || 'خطأ غير معروف'));
+  }
+
+  // إغلاق النموذج (يدوي أو بعد الموعد) — يمنع الوصول لأي مشروع لم يُرسِل بعد
+  if(computeClosedState() && FORM_STATUS !== 'submitted'){
+    renderClosedScreen();
+    return;
+  }
+
+  if(SECTIONS.length === 0){
+    document.getElementById('sectionCard').innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:15px;font-weight:700;color:var(--navy-800);margin-bottom:8px">تعذّر تحميل النموذج</div>
+        <div style="font-size:13px;color:var(--ink-600)">حدث خطأ أثناء تحميل الأسئلة من الخادم. يرجى تحديث الصفحة، وإن استمرت المشكلة تواصل مع فريق البرنامج.</div>
+      </div>`;
+    return;
+  }
+  if(!SECTIONS.find(s=>s.id===state.current)) state.current = SECTIONS[0].id;
+
+  bindTopbarActions();
+  renderAll();
+  if(FORM_DEADLINE && !computeClosedState()) startCountdown();
+  startCloseWatcher();
+}
+
+/* ---------------- أزرار الحفظ وتسجيل الخروج في الشريط العلوي ---------------- */
+function bindTopbarActions(){
+  const saveBtn = document.getElementById('btnTopSave');
+  const logoutBtn = document.getElementById('btnLogout');
+  const saveBtnHTML = icon('save',{size:13}) + ' حفظ';
+  saveBtn.innerHTML = saveBtnHTML;
+  logoutBtn.innerHTML = icon('log-out',{size:13}) + ' خروج';
+
+  saveBtn.addEventListener('click', async ()=>{
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'جارٍ الحفظ…';
+    await saveDraft(true);
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = saveBtnHTML;
+  });
+
+  logoutBtn.addEventListener('click', ()=>{
+    openLogoutConfirm();
+  });
+}
+
+/* تأكيد بسيط قبل تسجيل الخروج، مع خيار الحفظ أولًا لتفادي فقدان تعديلات غير محفوظة */
+function openLogoutConfirm(){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(11,11,61,.45);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:26px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+      <h3 style="margin:0 0 6px;font-size:16px;color:var(--navy-800)">تسجيل الخروج</h3>
+      <p style="margin:0 0 18px;font-size:12.5px;color:var(--ink-600)">سيتم حفظ آخر تعديلاتك تلقائيًا قبل الخروج. هل تريد المتابعة؟</p>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-ghost" id="logoutCancelBtn">إلغاء</button>
+        <button class="btn btn-primary" id="logoutConfirmBtn">حفظ وخروج</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('logoutCancelBtn').addEventListener('click', ()=> overlay.remove());
+  document.getElementById('logoutConfirmBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('logoutConfirmBtn');
+    btn.disabled = true; btn.textContent = 'جارٍ الحفظ…';
+    await saveDraft(false);
+    sessionStorage.removeItem('ib5_session');
+    window.location.href = 'login.html';
+  });
+}
+
+initApp();
+</script>
+</body>
+</html>
